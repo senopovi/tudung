@@ -60,7 +60,7 @@ async def main():
     for n in range(1, 7):
         cid = str(uuid.uuid4())
         await db.credit_unions.insert_one({"id": cid, "kode": f"CUG-{n:03d}", "nama": f"Credit Union Contoh {n:02d}", "manager": f"[Manager CU {n:02d}]",
-                                           "bagian_tudung": f"[Bagian Tudung CU {n:02d}]", "alamat": "[Alamat Credit Union]", "telepon": "[Telepon]", "created_at": now})
+                                           "bagian_tudung": f"[Bagian Tudung CU {n:02d}]", "alamat": "[Alamat Credit Union]", "telepon": "[Telepon]", "demo": True, "created_at": now})
         for k, c in enumerate(cases()):
             nama, jk = NAMES[k]
             syarat = {**FULL, "spp": "ada" if c["tgl_pinjam"] else "tidak", "identitas": c.get("identitas", "ada")}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader, Field } from "@/components/Common";
 import { MoneyInput } from "@/components/MoneyInput";
+import { Confirm } from "@/components/Controls";
 import { useAuth } from "@/context/AuthContext";
 import { api, errMsg, todayISO } from "@/lib/api";
 
@@ -20,7 +21,10 @@ export default function Pengaturan() {
   const { org, loadOrg } = useAuth();
   const [s, setS] = useState(null);
   const ref = useRef(null);
-  useEffect(() => { api.get("/settings").then((r) => setS(r.data)); }, []);
+  const [demo, setDemo] = useState(null);
+  const [askReset, setAskReset] = useState(false);
+  const loadDemo = () => api.get("/demo-data").then((r) => setDemo(r.data));
+  useEffect(() => { api.get("/settings").then((r) => setS(r.data)); loadDemo(); }, []);
   if (!s) return <p className="text-sm text-muted-foreground">Memuat...</p>;
   const set = (k) => (v) => setS((o) => ({ ...o, [k]: v?.target ? Number(v.target.value) : v }));
   const setB = (i, k, v) => setS((o) => ({ ...o, sanduk_brackets: o.sanduk_brackets.map((b, j) => (j === i ? { ...b, [k]: v } : b)) }));
@@ -41,6 +45,16 @@ export default function Pengaturan() {
     const fd = new FormData();
     fd.append("file", f);
     try { await api.post("/settings/kop", fd); await loadOrg(); toast.success("Kop surat diperbarui"); } catch (er) { toast.error(errMsg(er)); }
+  };
+  const resetDemo = async () => {
+    setAskReset(false);
+    try {
+      const { data } = await api.delete("/demo-data");
+      await loadOrg();
+      loadDemo();
+      toast.success(`Data contoh dihapus: ${data.permohonan} permohonan, ${data.cu} Credit Union`);
+      if (data.cu_dipertahankan.length) toast.warning(`CU ${data.cu_dipertahankan.join(", ")} dipertahankan karena sudah berisi data asli/iuran/user`);
+    } catch (e) { toast.error(errMsg(e)); }
   };
   const delKop = async () => { await api.delete("/settings/kop"); await loadOrg(); toast.success("Kop surat dihapus"); };
   const d = new Date(todayISO());
@@ -103,7 +117,18 @@ export default function Pengaturan() {
             {org.settings.kop_surat && <Button variant="outline" onClick={delKop} data-testid="kop-delete-btn"><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>}
           </div>
         </Card>
+
+        <Card title="Reset Data Contoh">
+          <p className="text-sm text-muted-foreground" data-testid="demo-info">
+            {demo ? `Tersisa ${demo.permohonan} permohonan contoh dan ${demo.cu} Credit Union contoh (CUG-001 s/d CUG-006).` : "Memuat..."}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">Menghapus semua permohonan contoh beserta berkas & pencairannya. Credit Union contoh yang sudah berisi data asli, iuran, atau user tetap dipertahankan.</p>
+          <Button variant="outline" disabled={!demo || (!demo.permohonan && !demo.cu)} onClick={() => setAskReset(true)} className="mt-4 border-red-300 text-red-700 hover:bg-red-50" data-testid="demo-reset-btn">
+            <Trash2 className="mr-2 h-4 w-4" /> Hapus Semua Data Contoh
+          </Button>
+        </Card>
       </div>
+      <Confirm open={askReset} onOpenChange={setAskReset} confirmText="Hapus Data Contoh" title="Hapus semua data contoh?" desc="Permohonan contoh, berkas, pencairan, dan Credit Union contoh akan dihapus permanen. Tindakan ini tidak dapat dibatalkan." onConfirm={resetDemo} />
     </div>
   );
 }

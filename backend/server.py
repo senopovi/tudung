@@ -702,6 +702,37 @@ async def delete_iuran(iid: str, user=Depends(current_user)):
     return {"ok": True}
 
 
+# ---------- Data Contoh ----------
+DEMO_Q = {"created_by": "seed-demo"}
+
+
+@api.get("/demo-data")
+async def demo_info(_=Depends(admin_user)):
+    return {"cu": await db.credit_unions.count_documents({"demo": True}), "permohonan": await db.permohonan.count_documents(DEMO_Q)}
+
+
+@api.delete("/demo-data")
+async def demo_reset(_=Depends(admin_user)):
+    rows = await db.permohonan.find(DEMO_Q, {"_id": 0, "id": 1, "file_id": 1, "analisis": 1, "pencairan_id": 1}).to_list(10000)
+    fids = [i for r in rows for i in (r.get("file_id"), (r.get("analisis") or {}).get("lalau_file_id"), (r.get("analisis") or {}).get("cacat_file_id")) if i]
+    await db.files.delete_many({"id": {"$in": fids}})
+    await db.permohonan.delete_many(DEMO_Q)
+    pids = {r["pencairan_id"] for r in rows if r.get("pencairan_id")}
+    for pid in pids:
+        if not await db.permohonan.find_one({"pencairan_id": pid}):
+            await db.pencairan.delete_one({"id": pid})
+    removed, kept = 0, []
+    for cu in await db.credit_unions.find({"demo": True}, {"_id": 0}).to_list(100):
+        busy = await db.permohonan.find_one({"cu_id": cu["id"]}) or await db.iuran.find_one({"cu_id": cu["id"]}) \
+            or await db.users.find_one({"cu_id": cu["id"]}) or await db.pencairan.find_one({"cu_id": cu["id"]})
+        if busy:
+            kept.append(cu["kode"])
+        else:
+            await db.credit_unions.delete_one({"id": cu["id"]})
+            removed += 1
+    return {"permohonan": len(rows), "cu": removed, "cu_dipertahankan": kept}
+
+
 # ---------- Dashboard ----------
 @api.get("/dashboard")
 async def dashboard(user=Depends(current_user)):
