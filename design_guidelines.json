@@ -1,0 +1,156 @@
+{
+  "identity": {
+    "app_name": "Tudung (Tudung-Pusaka)",
+    "app_type": "Data-Dense Financial SaaS / Admin Dashboard",
+    "target_audience": "Pengurus Puskopdit (Admin Pusat) & Petugas Credit Union / Koperasi Kredit",
+    "language": "Bahasa Indonesia",
+    "design_archetype": "Organic & Trust-Driven Performance Pro (Nuansa Hijau-Emas Khas Koperasi)",
+    "theme": "Light Theme (Profesional Terang)",
+    "emotional_tone": "Terpercaya, Rapi, Akurat, Dignified, Administrative Precision"
+  },
+  "color_palette": {
+    "css_variables": {
+      "--background": "45 20% 98%",
+      "--foreground": "24 10% 10%",
+      "--card": "0 0% 100%",
+      "--card-foreground": "24 10% 10%",
+      "--popover": "0 0% 100%",
+      "--popover-foreground": "24 10% 10%",
+      "--primary": "161 64% 20%",
+      "--primary-foreground": "0 0% 98%",
+      "--secondary": "43 78% 92%",
+      "--secondary-foreground": "38 80% 24%",
+      "--muted": "40 15% 94%",
+      "--muted-foreground": "24 10% 40%",
+      "--accent": "43 85% 48%",
+      "--accent-foreground": "0 0% 100%",
+      "--destructive": "0 72% 51%",
+      "--destructive-foreground": "0 0% 98%",
+      "--border": "40 12% 88%",
+      "--input": "40 12% 88%",
+      "--ring": "161 64% 20%",
+      "--radius": "0.375rem"
+    },
+    "hex_codes": {
+      "brand_emerald_dark": "#0d3b2e",
+      "brand_emerald_main": "#155e46",
+      "brand_emerald_light": "#e8f5f0",
+      "accent_gold_main": "#d97706",
+      "accent_gold_dark": "#92400e",
+      "accent_gold_soft": "#fef3c7",
+      "background_page": "#fafaf7",
+      "card_surface": "#ffffff",
+      "border_subtle": "#e5e3dc",
+      "text_dark_ink": "#1c1917",
+      "text_muted": "#57534e",
+      "status_approved": "#16a34a",
+      "status_partial": "#ca8a04",
+      "status_delayed": "#ea580c",
+      "status_rejected": "#dc2626"
+    },
+    "forbidden_colors": [
+      "#7351B7",
+      "#1B93A4",
+      "pure black #000000 gradients"
+    ]
+  },
+  "typography": {
+    "font_family_heading": "'Plus Jakarta Sans', sans-serif",
+    "font_family_body": "'Plus Jakarta Sans', sans-serif",
+    "font_family_mono": "'JetBrains Mono', 'Roboto Mono', monospace",
+    "heading_hierarchy": {
+      "h1": "text-3xl font-bold tracking-tight text-[#0d3b2e] md:text-4xl",
+      "h2": "text-xl font-semibold text-[#155e46] md:text-2xl",
+      "h3": "text-lg font-semibold text-[#1c1917]",
+      "subheading": "text-sm font-medium text-[#57534e]"
+    },
+    "numeric_formatting": {
+      "currency_style": "Right-aligned, dot thousands separator (e.g., Rp 15.000.000)",
+      "disbursement_no_style": "Font mono, bold uppercase (e.g., 2/T/PUSAKA/X/2026)"
+    }
+  },
+  "layout_and_navigation": {
+    "sidebar_groups": [
+      {
+        "group": "Ringkasan",
+        "items": ["Dashboard Utama"]
+      },
+      {
+        "group": "Operasional Transaksi",
+        "items": [
+          "Daftar Permohonan (Table & Sort Filter)",
+          "Tambah Permohonan (Form Klaim)",
+          "Analisis Permohonan (Antrean & Calculator Benefit)",
+          "Pencairan Tudung (Batch & Item Disburse)",
+          "Daftar Bantuan Cair (Cetak Kop Surat A4)"
+        ]
+      },
+      {
+        "group": "Kontribusi",
+        "items": ["Iuran Credit Union"]
+      },
+      {
+        "group": "Pelaporan",
+        "items": [
+          "Laporan Rekapitulasi",
+          "Laporan Per CU Per Tahun Buku",
+          "Laporan Bulanan Detail"
+        ]
+      },
+      {
+        "group": "Sistem & Master",
+        "items": [
+          "Data Induk (Profil Puskopdit, Master CU, Pengguna)",
+          "Pengaturan Aplikasi (Batas Plafon, Kop Surat, Counter)"
+        ]
+      }
+    ],
+    "role_access_modes": {
+      "Admin Pusat": "Akses Penuh Seluruh Data CU & Pengaturan Sistem",
+      "Petugas CU": "Akses Terbatas Hanya Data CU Masing-masing (Auto-filtered view & CU badge indicator)"
+    }
+  },
+  "component_strategies": {
+    "data_tables": {
+      "style": "Sharp 1px borders, subtle hover row state (bg-emerald-50/40), sticky header",
+      "features": ["Quick Search", "Filter by CU / Status / Date Range", "Sortable columns", "Pagination"]
+    },
+    "form_controls": {
+      "currency_input": "Right-aligned with auto dot separators on blur/input (e.g., 5.000.000)",
+      "date_input": "Shadcn Popover + Calendar or structured native date with Indonesian locale format (DD/MM/YYYY)",
+      "file_upload": "PDF Upload drag & drop, max 3MB validation, inline instant preview link & replace option"
+    },
+    "analysis_page": {
+      "member_summary_card": "Shows auto-calculated exact age (Years, Months, Days) and delay between event date & receipt date",
+      "benefit_calculator": "Sanduk (Savings) & Lalau (Loan) benefit recommendation engine with override capability, reason textarea, and decision PDF upload",
+      "decision_badges": {
+        "Disetujui": "bg-emerald-100 text-emerald-800 border-emerald-300",
+        "Disetujui Sebagian": "bg-amber-100 text-amber-800 border-amber-300",
+        "Ditunda": "bg-orange-100 text-orange-800 border-orange-300",
+        "Tidak Disetujui": "bg-red-100 text-red-800 border-red-300"
+      }
+    },
+    "print_report_a4": {
+      "format": "Printable A4 (210mm x 297mm) with zero margin clips",
+      "letterhead": "Kop Surat Puskopdit header with logo, organization name, address, contact, line separator",
+      "table_columns": ["No", "Nama Anggota", "BA / No. Rekening", "JK (L/P)", "SANDUK (Rp)", "LALAU (Rp)", "JUMLAH (Rp)"],
+      "totals_row": "Bold double-line bottom total row",
+      "signatures": "Dual signature block: Left side (Manager Puskopdit), Right side (Bagian Tudung)",
+      "export": "Support PDF printing and Excel export (.xlsx)"
+    }
+  },
+  "print_css_guidance": {
+    "print_styles": "@media print { body { background: #fff; font-size: 11pt; } .no-print { display: none !important; } .print-only { display: block !important; } .page-break { page-break-before: always; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #000; padding: 4px 8px; text-align: left; } th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; } .text-right { text-align: right; } }"
+  },
+  "image_urls": {
+    "hero_office": "https://images.unsplash.com/photo-1790344772503-3e1a478be584?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwyfHxpbmRvbmVzaWFuJTIwZmluYW5jaWFsJTIwYnVpbGRpbmclMjBvZmZpY2UlMjBidXNpbmVzcyUyMG1vZGVybiUyMGdyZWVuJTIwbG9nb3xlbnwwfHx8fDE3OTE2MTEyMjl8MA&ixlib=rb-4.1.0&q=85",
+    "manager_avatar": "https://images.unsplash.com/photo-1622902141397-a89655353bec?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxpbmRvbmVzaWFuJTIwYnVzaW5lc3MlMjBwZXJzb24lMjBwb3J0cmFpdCUyMHByb2Zlc3Npb25hbCUyMG1hbmFnZXIlMjBhdmF0YXJ8ZW58MHx8fHwxNzkxNjExMjM2fDA&ixlib=rb-4.1.0&q=85",
+    "officer_avatar": "https://images.unsplash.com/photo-1665578705764-5c8e6282c944?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHw0fHxpbmRvbmVzaWFuJTIwYnVzaW5lc3MlMjBwZXJzb24lMjBwb3J0cmFpdCUyMHByb2Zlc3Npb25hbCUyMG1hbmFnZXIlMjBhdmF0YXJ8ZW58MHx8fHwxNzkxNjExMjM2fDA&ixlib=rb-4.1.0&q=85"
+  },
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Always set explicit data-testid attributes on key interactive components, form inputs, buttons, status indicators, and summary numbers.",
+    "Ensure input components handling money have right alignment and auto-formatting with dot separators (e.g. 10.000.000).",
+    "Keep header backgrounds non-transparent with proper backdrop blurs or solid fills.",
+    "Ensure print preview views closely match standard Indonesian official document standards with formal kop surat letterheads."
+  ]
+}

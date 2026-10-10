@@ -1,0 +1,151 @@
+import * as XLSX from "xlsx";
+import { Printer, FileSpreadsheet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
+import { tgl, todayISO } from "@/lib/api";
+
+export function exportExcel(fileName) {
+  const el = document.getElementById("report-table");
+  if (!el) return;
+  const wb = XLSX.utils.table_to_book(el, { raw: true, sheet: "Laporan" });
+  XLSX.writeFile(wb, `${fileName}.xlsx`);
+}
+
+const Kop = ({ settings, p }) =>
+  settings.kop_surat ? (
+    <img src={settings.kop_surat} alt="Kop Surat" className="mb-3 w-full" data-testid="report-kop-image" />
+  ) : (
+    <div className="mb-3 border-b-[3px] border-double border-black pb-2 text-center" data-testid="report-kop-text">
+      <p className="text-[15pt] font-extrabold uppercase leading-tight">{p.nama || "PUSKOPDIT"}</p>
+      {p.nomor && <p className="text-[9pt]">Badan Hukum No. {p.nomor}</p>}
+      <p className="text-[9pt]">{p.alamat}{p.telepon ? ` • Telp. ${p.telepon}` : ""}</p>
+    </div>
+  );
+
+export const Signatures = ({ p }) => (
+  <div className="mt-8 grid grid-cols-2 gap-8 text-[10pt]" style={{ pageBreakInside: "avoid" }} data-testid="report-signatures">
+    <div className="text-center">
+      <p>&nbsp;</p>
+      <p>Manager</p>
+      <div className="h-20" />
+      <p className="font-bold underline">{p.manager || "(.............................)"}</p>
+    </div>
+    <div className="text-center">
+      <p>{tgl(todayISO())}</p>
+      <p>Bagian Tudung</p>
+      <div className="h-20" />
+      <p className="font-bold underline">{p.bagian_tudung || "(.............................)"}</p>
+    </div>
+  </div>
+);
+
+export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true }) => {
+  const { org } = useAuth();
+  return (
+    <div className="space-y-5">
+      {filters && <div className="no-print rounded-lg border bg-white p-4 shadow-sm" data-testid="report-filters">{filters}</div>}
+      <div className="no-print flex flex-wrap justify-end gap-2">
+        <Button variant="outline" onClick={() => exportExcel(fileName)} disabled={!ready} data-testid="report-excel-btn">
+          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-700" /> Ekspor Excel
+        </Button>
+        <Button onClick={() => window.print()} disabled={!ready} className="bg-[#155e46] hover:bg-[#0d3b2e]" data-testid="report-print-btn">
+          <Printer className="mr-2 h-4 w-4" /> Cetak / PDF
+        </Button>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="paper print-area" data-testid="report-paper">
+          <Kop settings={org.settings} p={org.puskopdit} />
+          <div className="mb-3 text-center">
+            <p className="text-[12pt] font-bold uppercase">{title}</p>
+            {lines.filter(Boolean).map((l) => (
+              <p key={l} className="text-[10pt] font-semibold">{l}</p>
+            ))}
+          </div>
+          {children}
+          <Signatures p={org.puskopdit} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const ReportTable = ({ columns, rows, labelSpan = 3, empty = "Tidak ada data" }) => {
+  const hasTotal = columns.some((c) => c.total);
+  return (
+    <table className="rpt-table" id="report-table" data-testid="report-table">
+      <thead>
+        <tr>{columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr>
+      </thead>
+      <tbody>
+        {rows.length === 0 && (
+          <tr><td colSpan={columns.length} className="ctr">{empty}</td></tr>
+        )}
+        {rows.map((r, i) => (
+          <tr key={r.id || i}>
+            {columns.map((c) => {
+              const v = c.render ? c.render(r, i) : r[c.key];
+              return <td key={c.key} className={c.money ? "num" : c.center ? "ctr" : ""}>{c.money ? new Intl.NumberFormat("id-ID").format(v || 0) : v}</td>;
+            })}
+          </tr>
+        ))}
+      </tbody>
+      {hasTotal && rows.length > 0 && (
+        <tfoot>
+          <tr>
+            <td colSpan={labelSpan} className="ctr">JUMLAH</td>
+            {columns.slice(labelSpan).map((c) => {
+              if (!c.total) return <td key={c.key} />;
+              const s = rows.reduce((a, r, i) => a + (Number(c.value ? c.value(r) : c.render ? c.render(r, i) : r[c.key]) || 0), 0);
+              return <td key={c.key} className={c.money ? "num" : "ctr"}>{c.money ? new Intl.NumberFormat("id-ID").format(s) : s}</td>;
+            })}
+          </tr>
+        </tfoot>
+      )}
+    </table>
+  );
+};
+
+export const PencairanTable = ({ rows }) => {
+  const f = (n) => new Intl.NumberFormat("id-ID").format(n || 0);
+  const s = (fn) => rows.reduce((a, r) => a + (fn(r) || 0), 0);
+  const a = (r) => r.analisis || {};
+  return (
+    <table className="rpt-table" id="report-table" data-testid="pencairan-report-table">
+      <thead>
+        <tr>
+          <th rowSpan={2}>No.</th><th rowSpan={2}>Nama</th><th rowSpan={2}>BA</th>
+          <th colSpan={2}>JK</th>
+          <th rowSpan={2}>SANDUK</th><th rowSpan={2}>LALAU</th><th rowSpan={2}>JUMLAH</th>
+        </tr>
+        <tr><th>L</th><th>P</th></tr>
+      </thead>
+      <tbody>
+        {rows.length === 0 && <tr><td colSpan={8} className="ctr">Tidak ada data</td></tr>}
+        {rows.map((r, i) => (
+          <tr key={r.id}>
+            <td className="ctr">{i + 1}</td>
+            <td>{r.nama}</td>
+            <td className="ctr">{r.nomor_anggota}</td>
+            <td className="ctr">{r.jenis_kelamin === "L" ? 1 : ""}</td>
+            <td className="ctr">{r.jenis_kelamin === "P" ? 1 : ""}</td>
+            <td className="num">{f(a(r).sanduk_disetujui)}</td>
+            <td className="num">{f(a(r).lalau_disetujui)}</td>
+            <td className="num">{f(a(r).total_disetujui)}</td>
+          </tr>
+        ))}
+      </tbody>
+      {rows.length > 0 && (
+        <tfoot>
+          <tr data-testid="pencairan-total-row">
+            <td colSpan={3} className="ctr">JUMLAH</td>
+            <td className="ctr">{rows.filter((r) => r.jenis_kelamin === "L").length}</td>
+            <td className="ctr">{rows.filter((r) => r.jenis_kelamin === "P").length}</td>
+            <td className="num">{f(s((r) => a(r).sanduk_disetujui))}</td>
+            <td className="num">{f(s((r) => a(r).lalau_disetujui))}</td>
+            <td className="num">{f(s((r) => a(r).total_disetujui))}</td>
+          </tr>
+        </tfoot>
+      )}
+    </table>
+  );
+};
