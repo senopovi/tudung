@@ -8,18 +8,45 @@ import { api, BULAN } from "@/lib/api";
 
 const f = (n) => new Intl.NumberFormat("id-ID").format(n || 0);
 const dd = (s) => s.slice(8, 10) + "/" + s.slice(5, 7);
-const KEYS = ["sanduk", "lalau", "total", "biris", "gppk"];
+const KEYS = ["sanduk", "lalau", "total", "biris", "gppk", "saldo2"];
+const T1 = { a: "sanduk", b: "lalau", s: "total", k: "keterangan", la: "Sanduk", lb: "Lalau" };
+const T2 = { a: "biris", b: "gppk", s: "saldo2", k: "keterangan2", la: "Biris Pangkaras", lb: "Sol. GPPK" };
+const withSaldo2 = (r) => ({ ...r, saldo2: (r.biris || 0) + (r.gppk || 0) });
 
-const Cells = ({ r }) => (
+const Cells = ({ r, t }) => (
   <>
-    <td className="num">{r ? f(r.sanduk) : ""}</td>
-    <td className="num">{r ? f(r.lalau) : ""}</td>
-    <td className="num">{r ? f(r.total) : ""}</td>
-    <td>{r?.keterangan}</td>
-    <td className="num">{r ? f(r.biris) : ""}</td>
-    <td className="num">{r ? f(r.gppk) : ""}</td>
-    <td>{r?.keterangan2}</td>
+    <td className="num">{r ? f(r[t.a]) : ""}</td>
+    <td className="num">{r ? f(r[t.b]) : ""}</td>
+    <td className="num">{r ? f(r[t.s]) : ""}</td>
+    <td>{r?.[t.k]}</td>
   </>
+);
+
+const IuranTable = ({ t, id, testid, jenis, months, tot }) => (
+  <table className="rpt-table" id={id} data-testid={testid}>
+    <thead>
+      <tr><th rowSpan={2}>Bulan</th><th rowSpan={2}>Tanggal</th><th colSpan={2}>Iuran</th><th rowSpan={2}>Saldo</th><th rowSpan={2}>Keterangan</th></tr>
+      <tr><th>{t.la}</th><th>{t.lb}</th></tr>
+    </thead>
+    <tbody>
+      {jenis === "rekap"
+        ? months.map((mo) => (
+          <tr key={mo.label}><td>{mo.label}</td><td className="ctr">{mo.agg?.tanggal}</td><Cells r={mo.agg} t={t} /></tr>
+        ))
+        : months.flatMap((mo) => (mo.items.length ? mo.items : [null]).map((r, i) => (
+          <tr key={`${mo.label}-${r?.id || i}`}>
+            {i === 0 && <td rowSpan={Math.max(mo.items.length, 1)}>{mo.label}</td>}
+            <td className="ctr">{r ? dd(r.tanggal) + "/" + r.tanggal.slice(0, 4) : ""}</td>
+            <Cells r={r} t={t} />
+          </tr>
+        )))}
+    </tbody>
+    <tfoot>
+      <tr data-testid={`${testid}-total`}>
+        <td>Jumlah</td><td /><td className="num">{f(tot[t.a])}</td><td className="num">{f(tot[t.b])}</td><td className="num">{f(tot[t.s])}</td><td />
+      </tr>
+    </tfoot>
+  </table>
 );
 
 export default function LaporanIuran() {
@@ -32,7 +59,7 @@ export default function LaporanIuran() {
   useEffect(() => { if (!cu && org.cus[0]) setCu(org.cus[0].id); }, [org.cus, cu]);
   useEffect(() => {
     if (!cu) return;
-    api.get("/iuran", { params: { cu_id: cu, dari: `${tahun - 1}-12-01`, sampai: `${tahun}-12-31` } }).then((r) => setRows(r.data));
+    api.get("/iuran", { params: { cu_id: cu, dari: `${tahun - 1}-12-01`, sampai: `${tahun}-12-31` } }).then((r) => setRows(r.data.map(withSaldo2)));
   }, [cu, tahun]);
 
   const months = useMemo(() => [{ y: tahun - 1, m: 12 }, ...BULAN.map((_, i) => ({ y: tahun, m: i + 1 }))].map((mo) => {
@@ -47,9 +74,13 @@ export default function LaporanIuran() {
   }), [rows, tahun]);
   const tot = Object.fromEntries(KEYS.map((k) => [k, rows.reduce((a, r) => a + (r[k] || 0), 0)]));
   const cuName = org.cus.find((c) => c.id === cu)?.nama || "-";
+  const rekapLine = jenis === "rekap" ? "(Rekap Bulanan)" : null;
+  const props = { jenis, months, tot };
 
   return (
-    <ReportShell cuId={cu} title="Laporan Iuran Tudung" lines={[cuName, `Tahun Buku ${tahun}`, jenis === "rekap" ? "(Rekap Bulanan)" : null]} fileName={`Iuran_${cuName}_${tahun}_${jenis}`}
+    <ReportShell cuId={cu} title="Laporan Iuran Tudung" lines={[cuName, `Tahun Buku ${tahun}`, rekapLine]} fileName={`Iuran_${cuName}_${tahun}_${jenis}`}
+      extra={{ titles: ["Laporan Iuran", "Biris Pangkaras dan Solidaritas GPPK"], lines: [cuName, `Tahun Buku ${tahun}`, rekapLine],
+        content: <IuranTable t={T2} id="report-table-2" testid="iuran-biris-report-table" {...props} /> }}
       filters={
         <div className="grid gap-3 md:grid-cols-3">
           <Field label="Credit Union"><CuSelect value={cu} onChange={setCu} disabled={!isAdmin} testid="lap-iuran-cu" /></Field>
@@ -57,34 +88,7 @@ export default function LaporanIuran() {
           <Field label="Jenis Laporan"><RG value={jenis} onChange={setJenis} testid="lap-iuran-jenis" options={[["detail", "Rincian per Pembayaran"], ["rekap", "Rekap per Bulan"]]} /></Field>
         </div>
       }>
-      <table className="rpt-table" id="report-table" data-testid="iuran-report-table">
-        <thead>
-          <tr>
-            <th rowSpan={2}>Bulan</th><th rowSpan={2}>Tanggal</th><th colSpan={2}>Iuran</th><th rowSpan={2}>Saldo</th><th rowSpan={2}>Keterangan</th>
-            <th colSpan={2}>Iuran</th><th rowSpan={2}>Keterangan</th>
-          </tr>
-          <tr><th>Sanduk</th><th>Lalau</th><th>Biris Pangkaras</th><th>Sol. GPPK</th></tr>
-        </thead>
-        <tbody>
-          {jenis === "rekap"
-            ? months.map((mo) => (
-              <tr key={mo.label}><td>{mo.label}</td><td className="ctr">{mo.agg?.tanggal}</td><Cells r={mo.agg} /></tr>
-            ))
-            : months.flatMap((mo) => (mo.items.length ? mo.items : [null]).map((r, i) => (
-              <tr key={`${mo.label}-${r?.id || i}`}>
-                {i === 0 && <td rowSpan={Math.max(mo.items.length, 1)}>{mo.label}</td>}
-                <td className="ctr">{r ? dd(r.tanggal) + "/" + r.tanggal.slice(0, 4) : ""}</td>
-                <Cells r={r} />
-              </tr>
-            )))}
-        </tbody>
-        <tfoot>
-          <tr data-testid="iuran-report-total">
-            <td>Jumlah</td><td /><td className="num">{f(tot.sanduk)}</td><td className="num">{f(tot.lalau)}</td><td className="num">{f(tot.total)}</td><td />
-            <td className="num">{f(tot.biris)}</td><td className="num">{f(tot.gppk)}</td><td />
-          </tr>
-        </tfoot>
-      </table>
+      <IuranTable t={T1} id="report-table" testid="iuran-report-table" {...props} />
     </ReportShell>
   );
 }

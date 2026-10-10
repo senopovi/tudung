@@ -111,7 +111,7 @@ export function LapSaldoPeriode() {
             <tr key={r.id}>
               <td className="ctr">{i + 1}</td><td>{r.label}</td>
               <td className="num">{rp(r.sanduk)}</td><td className="num">{rp(r.lalau)}</td><td className="num">{rp(r.total)}</td>
-              <td className="ctr">{r.l}</td><td className="ctr">{r.p}</td><td className="ctr">{r.n}</td>
+              <td className="ctr">{r.l}{r.n > 0 && <span className="block text-[7.5pt]">({pct(r.l, r.n)})</span>}</td><td className="ctr">{r.p}{r.n > 0 && <span className="block text-[7.5pt]">({pct(r.p, r.n)})</span>}</td><td className="ctr">{r.n}</td>
             </tr>
           ))}
         </tbody>

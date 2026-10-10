@@ -80,4 +80,5 @@ body {
     .rpt-table { font-size: 7.5pt; }
     .rpt-table tr { page-break-inside: avoid; }
     .rpt-table tfoot { display: table-row-group; }
+    .report-next-page { break-before: page; page-break-before: always; }
 }

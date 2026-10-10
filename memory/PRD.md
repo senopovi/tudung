@@ -57,6 +57,8 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Laporan Saldo Pencairan per Periode digabung dengan Penerima L/P: header 2 baris (PENCAIRAN TUDUNG: Sanduk/Lalau/Jumlah; JENIS KELAMIN: Laki-laki/Perempuan; JUMLAH penerima). Menu & laporan "Penerima L/P per Periode" dihapus (URL lama diarahkan ke Dashboard)
 - (2026-10-10) Grafik batang Laki-laki/Perempuan per periode di atas tabel Saldo Pencairan per Periode (recharts BarChart, ikut tercetak); "Belum ada data" bila tidak ada penerima
 - (2026-10-10) Persentase Laki-laki/Perempuan (1 desimal, format id-ID) di bawah angka pada baris JUMLAH tabel Saldo Pencairan per Periode; disembunyikan bila total penerima 0
+- (2026-10-10) Persentase L/P per baris periode di Saldo Pencairan per Periode
+- (2026-10-10) Laporan Iuran Tudung dipecah: tabel 1 (Sanduk, Lalau, Saldo, Keterangan) + halaman baru (ReportShell prop `extra`, class .report-next-page break-before page) "LAPORAN IURAN / BIRIS PANGKARAS DAN SOLIDARITAS GPPK" (Biris, Sol. GPPK, Saldo = Biris+GPPK, Keterangan2) dengan CU, Tahun Buku, dan blok tanda tangan sendiri; Ekspor Excel menambah sheet "Laporan 2" (#report-table-2)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

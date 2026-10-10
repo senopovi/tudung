@@ -12,6 +12,8 @@ export function exportExcel(fileName) {
   const el = document.getElementById("report-table");
   if (!el) return;
   const wb = XLSX.utils.table_to_book(el, { raw: true, sheet: "Laporan" });
+  const el2 = document.getElementById("report-table-2");
+  if (el2) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(el2, { raw: true }), "Laporan 2");
   XLSX.writeFile(wb, `${fileName}.xlsx`);
 }
 
@@ -52,7 +54,7 @@ export const Signatures = ({ p, tanggal, s = {} }) => (
 
 const KERTAS = { A4: [210, 297], F4: [215, 330] };
 
-export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true, cuId }) => {
+export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true, cuId, extra }) => {
   const { org, user, isAdmin } = useAuth();
   const sigCu = cuId || (!isAdmin ? user?.cu_id : "");
   const [cuTtd, setCuTtd] = useState({});
@@ -112,6 +114,16 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
               </div>
               {children}
               <Signatures p={sigP} tanggal={ttd} s={denganTtd ? sigS : {}} />
+              {extra && (
+                <div className="report-next-page mt-10 border-t-2 border-dashed border-stone-300 pt-8 print:mt-0 print:border-0 print:pt-0" data-testid="report-extra-page">
+                  <div className="mb-3 text-center">
+                    {extra.titles.map((t) => <p key={t} className="text-[12pt] font-bold uppercase">{t}</p>)}
+                    {extra.lines.filter(Boolean).map((l) => <p key={l} className="text-[10pt] font-semibold">{l}</p>)}
+                  </div>
+                  {extra.content}
+                  <Signatures p={sigP} tanggal={ttd} s={denganTtd ? sigS : {}} />
+                </div>
+              )}
             </td></tr></tbody>
           </table>
         </div>
