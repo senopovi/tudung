@@ -1,0 +1,30 @@
+{
+  "summary": "Full E2E for review iteration 6 (Hak Akses per User + Angka Kematian per Mil). Backend: 14 pytest tests in /app/backend/tests/test_user_hak_permil.py — ALL PASSED (6.42s). Covered: (1) UserIn.hak_akses persists in users.hak_akses with all-true defaults for petugas; admin role gets hak_akses=null. (2) Effective permission = CU AND user: petugas A (lihat_laporan=false) gets 403 on GET /api/pencairan and GET /api/laporan/permil?tahun=2026; petugas B (all true) gets 200 on both — and /api/laporan/permil returns only own CU row. (3) input_iuran=false blocks POST /api/iuran (403); switched to petugas B it returns 200. (4) When CU.hak_akses.lihat_laporan is flipped off, even petugas B gets 403 on /api/pencairan and /api/laporan/permil (CU right overrides user right). (5) Per-mil math: TEST CU jumlah_anggota=2000, 3 permohonan with tgl_kejadian in 2026 → /api/laporan/permil?tahun=2026 returns meninggal=3, anggota=2000, permil=1.5, L=2, P=1 for the TEST CU. (6) CU with jumlah_anggota=0 returns anggota=0 and permil=null. (7) GET /api/dashboard includes 'permil' {tahun, meninggal, anggota, permil}; for petugas B, dashboard permil.anggota=2000 (scoped to own CU). (8) CU dialog persists both hak_akses.lihat_laporan and jumlah_anggota. Frontend (Playwright, admin + 2 petugas): (a) Data Induk → Data User → Add dialog shows HakBoxes with 5 checkboxes data-testid user-hak-input_iuran / user-hak-ubah_hapus_permohonan / user-hak-lihat_hasil_analisis / user-hak-lihat_laporan_permohonan / user-hak-lihat_laporan, all defaulting data-state='checked'; switching role to admin hides user-hak block (note shown instead). (b) Data CU dialog has new data-testid cu-field-jumlah_anggota (number input) and hak-lihat_laporan checkbox in the CU HakBoxes. (c) /laporan/permil renders report titled 'Laporan Angka Kematian/CTT Anggota per Mil', shows table with per-CU rows and permil-total line. (d) nav-laporan-permil present in admin sidebar. (e) Petugas A (lihat_laporan=false) sidebar: nav-laporan-permil=0, nav-bantuan-cair=0, nav-laporan-pencairan=0 — hidden. Direct GET /laporan/pencairan redirects to '/'. (f) Petugas B (all on) sidebar shows nav-laporan-permil and nav-bantuan-cair; /laporan/permil renders correctly showing own CU row only ('Per mil keseluruhan: 0 ‰' with 1,500 anggota TEST CU). (g) Dashboard dash-permil card + dash-permil-value present for both admin and petugas. All TEST_ data cleaned up (CUs, users, permohonan); seed demo (CUG-001..006) untouched.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_user_hak_permil.py",
+    "/app/test_reports/pytest/user_hak_permil.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:391 can() now ANDs CU hak with user hak (treating missing user key as True) — matches 'user cannot exceed CU'. Correct and symmetrical with AuthContext.can on frontend.",
+    "server.py:302 _user_doc normalizes hak_akses to all HAK_DEFAULT keys for petugas and null for admin — prevents partial/stale keys. Good.",
+    "server.py:818 _permil uses cus.get(id).jumlah_anggota (fall back to 0) and returns permil=None when anggota=0 — frontend fmtPermil renders '-'. Clean.",
+    "server.py:826 /api/laporan/permil scopes petugas to own CU via ids=[user['cu_id']]; also requires 'lihat_laporan' — matches spec.",
+    "server.py:1050 dashboard adds 'permil' field; uses scope_cu(user) so petugas only gets own CU anggota — correct.",
+    "Layout.jsx allowed() hides /laporan/* and /bantuan-cair when !can('lihat_laporan'); permil nav item correctly inherits this. No per-nav 'perm' override needed since it falls under /laporan/*.",
+    "AuthContext.can() merges CU hak_akses with defaults then checks user.hak_akses[perm] !== false — admin bypassed. Mirror of backend logic.",
+    "Dashboard.jsx dash-permil card always rendered — shows '-' gracefully when permil is null (CU jumlah_anggota missing). Nice UX.",
+    "LaporanAnalitik.LapPerMil fmtPermil replaces '.' with ',' — matches id-ID formatting; '‰' sign used consistently.",
+    "Minor: Dialog in DataInduk has 'Missing Description or aria-describedby' a11y warnings (both CU and user dialogs). Not blocking but worth adding DialogDescription."
+  ],
+  "updated_files": ["/app/backend/tests/test_user_hak_permil.py"],
+  "success_rate": {"backend": "100% (14/14)", "frontend": "100% (all assertions)"},
+  "test_credentials": "admin: senopovi@gmail.com / TudungAdmin#2026",
+  "seed_data_creation": "Module-scoped fixture creates TEST_ CU (jumlah_anggota=2000), 2 TEST_ petugas (A: lihat_laporan+input_iuran off, B: all on), and 3 TEST_ permohonan with tgl_kejadian 2026-01/02/03-15. Full teardown deletes permohonan, iuran, users, CU. Frontend test creates & deletes additional TEST-FE-xxx CU + 2 petugas. Seed demo data untouched; settings not modified.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Both features from iteration 6 are verified end-to-end. Reusable regression file: /app/backend/tests/test_user_hak_permil.py (14 tests, 6.4s, self-cleaning). Minor a11y warning on DialogContent (missing aria-describedby) exists on CU + User + login-history dialogs — non-blocking. Permil permission is tied to lihat_laporan (not a separate flag) — this is intentional per spec.",
+  "rca of the issue": "N/A"
+}
