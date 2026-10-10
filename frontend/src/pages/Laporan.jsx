@@ -40,7 +40,7 @@ const useF = (init) => {
 
 const usePeriodLine = (f, a, b, label) => {
   const { org } = useAuth();
-  const cu = org.cus.find((c) => c.id === f.cu_id);
+  const cu = org.cus.find((c) => c.id === f.cu_id) || (org.cus.length === 1 ? org.cus[0] : null);
   return [cu ? `Credit Union: ${cu.nama}` : "Semua Credit Union", f[a] || f[b] ? `${label}: ${f[a] ? tgl(f[a]) : "awal"} s/d ${f[b] ? tgl(f[b]) : "sekarang"}` : null];
 };
 

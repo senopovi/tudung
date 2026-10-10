@@ -41,7 +41,7 @@ const useData = (url, params) => {
   return rows;
 };
 
-const cuLine = (cus, id) => (id ? `Credit Union: ${cus.find((c) => c.id === id)?.nama || "-"}` : "Semua Credit Union");
+const cuLine = (cus, id) => (id ? `Credit Union: ${cus.find((c) => c.id === id)?.nama || "-"}` : cus.length === 1 ? `Credit Union: ${cus[0].nama}` : "Semua Credit Union");
 const TIPE = [["triwulan", "Tiga Bulan"], ["semester", "Enam Bulan"], ["tahun", "Satu Tahun"]];
 const TIPE_LABEL = { bulan: "Bulanan", triwulan: "Tiga Bulanan", semester: "Enam Bulanan", tahun: "Tahunan" };
 
