@@ -41,16 +41,28 @@ export const Signatures = ({ p }) => (
   </div>
 );
 
+const KERTAS = { A4: [210, 297], F4: [215, 330] };
+
 export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true }) => {
   const { org } = useAuth();
   const key = `tudung-orientasi:${title}`;
   const [ori, setOri] = useState(() => localStorage.getItem(key) || "portrait");
   const pickOri = (v) => { if (!v) return; setOri(v); localStorage.setItem(key, v); };
+  const kKey = `tudung-kertas:${title}`;
+  const [kertas, setKertas] = useState(() => localStorage.getItem(kKey) || "A4");
+  const pickKertas = (v) => { if (!v) return; setKertas(v); localStorage.setItem(kKey, v); };
+  const [w, h] = KERTAS[kertas] || KERTAS.A4;
+  const [pw, ph] = ori === "landscape" ? [h, w] : [w, h];
   return (
     <div className="space-y-5">
-      {ori === "landscape" && <style>{"@page { size: A4 landscape; }"}</style>}
+      <style>{`@page { size: ${pw}mm ${ph}mm; }`}</style>
       {filters && <div className="no-print rounded-lg border bg-white p-4 shadow-sm" data-testid="report-filters">{filters}</div>}
       <div className="no-print flex flex-wrap items-center justify-end gap-2">
+        <ToggleGroup type="single" value={kertas} onValueChange={pickKertas} className="rounded-md border bg-white p-0.5" data-testid="report-paper-size">
+          {Object.keys(KERTAS).map((k) => (
+            <ToggleGroupItem key={k} value={k} size="sm" className="data-[state=on]:bg-[#155e46] data-[state=on]:text-white" data-testid={`report-paper-size-${k.toLowerCase()}`}>{k}</ToggleGroupItem>
+          ))}
+        </ToggleGroup>
         <ToggleGroup type="single" value={ori} onValueChange={pickOri} className="rounded-md border bg-white p-0.5" data-testid="report-orientation">
           <ToggleGroupItem value="portrait" size="sm" className="data-[state=on]:bg-[#155e46] data-[state=on]:text-white" data-testid="report-orientation-portrait">Potret</ToggleGroupItem>
           <ToggleGroupItem value="landscape" size="sm" className="data-[state=on]:bg-[#155e46] data-[state=on]:text-white" data-testid="report-orientation-landscape">Lanskap</ToggleGroupItem>
@@ -63,7 +75,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
         </Button>
       </div>
       <div className="overflow-x-auto">
-        <div className={`paper print-area ${ori === "landscape" ? "paper-landscape" : ""}`} data-testid="report-paper">
+        <div className={`paper print-area ${ori === "landscape" ? "paper-landscape" : ""}`} style={{ maxWidth: `${pw}mm` }} data-testid="report-paper">
           <table className="print-wrap" data-testid="report-print-wrap">
             <thead><tr><td><Kop settings={org.settings} p={org.puskopdit} /></td></tr></thead>
             <tbody><tr><td>

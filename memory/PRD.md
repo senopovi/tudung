@@ -41,6 +41,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Kop surat resmi PUSAKA (dari user, garis tepi 1px dipangkas) diunggah ke settings.kop_surat -> dipakai semua laporan cetak A4 via ReportShell
 - (2026-10-10) Cetak multi-halaman: ReportShell membungkus konten dalam table.print-wrap (thead = kop, diulang tiap halaman; judul hanya halaman 1; tanda tangan setelah tabel di halaman terakhir); header kolom tabel ikut diulang, tfoot JUMLAH hanya di akhir; @page @bottom-center "Halaman X dari Y" (Chrome/Edge 131+); latar body putih saat cetak
 - (2026-10-10) Pilihan orientasi cetak Potret/Lanskap (ToggleGroup di ReportShell, default Potret, diingat per judul laporan di localStorage `tudung-orientasi:<judul>`); Lanskap menyuntik `@page { size: A4 landscape }` + pratinjau .paper-landscape (297mm); kop dibatasi 180mm saat lanskap agar Chrome tetap mengulang kop tiap halaman
+- (2026-10-10) Pilihan ukuran kertas A4 (210x297) / F4 (215x330 mm) di ReportShell, digabung dengan orientasi; `@page { size: Wmm Hmm }` disuntik dinamis, lebar pratinjau mengikuti; diingat per judul laporan (`tudung-kertas:<judul>`)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi
