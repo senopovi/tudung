@@ -758,11 +758,24 @@ async def dashboard(user=Depends(current_user)):
             name = cus.get(r["cu_id"], {}).get("nama", "-")
             per_cu[name] = per_cu.get(name, 0) + a.get("sanduk_disetujui", 0) + a.get("lalau_disetujui", 0)
     recent = await db.permohonan.find(q, {"_id": 0, "id": 1, "nama": 1, "nomor_anggota": 1, "cu_id": 1, "tanggal_terima": 1, "status": 1}).sort("created_at", -1).to_list(6)
+    t = today()
+    months = [((t.year * 12 + t.month - 1 - i) // 12, (t.year * 12 + t.month - 1 - i) % 12 + 1) for i in range(11, -1, -1)]
+    keys = [f"{y}-{m:02d}" for y, m in months]
+    tren = {k: {"bulan": k, "iuran": 0, "cair": 0, "anggota": 0} for k in keys}
+    for r in rows:
+        k = (r.get("tanggal_cair") or "")[:7]
+        if r["status"] == S_CAIR and k in tren:
+            tren[k]["cair"] += (r.get("analisis") or {}).get("sanduk_disetujui", 0) + (r.get("analisis") or {}).get("lalau_disetujui", 0)
+            tren[k]["anggota"] += 1
+    iq = {**q, "tanggal": {"$gte": f"{keys[0]}-01", "$lte": f"{keys[-1]}-31"}}
+    for i in await db.iuran.find(iq, {"_id": 0, "tanggal": 1, "total": 1}).to_list(50000):
+        if i["tanggal"][:7] in tren:
+            tren[i["tanggal"][:7]]["iuran"] += i.get("total", 0)
     for r in recent:
         r["cu_nama"] = cus.get(r["cu_id"], {}).get("nama", "-")
     return {"total": len(rows), "status": status, "hasil": hasil, "cair": {**cair, "total": cair["sanduk"] + cair["lalau"]},
             "per_cu": [{"nama": k, "total": v} for k, v in sorted(per_cu.items(), key=lambda x: -x[1])],
-            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent}
+            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent, "tren": list(tren.values())}
 
 
 app.include_router(api)
