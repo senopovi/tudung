@@ -18,7 +18,10 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Iuran CU (rapel multi-baris), 6 laporan, Data Induk, Pengaturan
 - Interpretasi: "usia jadi anggota 0–1 tahun maks 12,5 jt" diterapkan sebagai LAMA keanggotaan ≤ 1 tahun (bisa diubah di Pengaturan)
 
+## Implemented (2026-10-10, iterasi 2)
+- Batal Pencairan (admin): DELETE /api/pencairan/{id}, tombol di Daftar Bantuan Cair -> data kembali ke "Sudah Dianalisis"
+- Petugas CU bisa input/ubah/hapus iuran CU sendiri (dibatasi per CU)
+- Seed demo `backend/seed_demo.py`: 6 CU (CUG-001..006, nama/manager/alamat placeholder) x 9 permohonan berbagai kriteria, BA 3 + 1236*k, masing-masing dengan PDF contoh
+
 ## Backlog
-- P1: Batalkan pencairan (void) oleh admin
-- P1: Petugas CU ikut input iuran (saat ini admin saja)
 - P2: Riwayat audit perubahan, notifikasi
