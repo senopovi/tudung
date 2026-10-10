@@ -45,6 +45,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Logo PUSAKA (public/logo-pusaka.png, favicon.ico, logo192, apple-touch-icon): sidebar (bulat putih, ring amber), header mobile, Login (panel kiri + di atas form), halaman reset password; judul tab "Tudung-Pusaka"
 - (2026-10-10) Subjudul laporan "Format A4/F4"; input "Tgl. Tanda Tangan" di ReportShell (default hari ini, tidak disimpan) -> Signatures tanggal
 - (2026-10-10) puskopdit.kota (default "Pontianak" via GET bila belum disimpan; diatur di Data PUSKOPDIT "Kota Tanda Tangan") -> blok tanda tangan "Kota, tanggal"; kosong = hanya tanggal
+- (2026-10-10) Tanda tangan & stempel (settings.ttd_manager/stempel_manager/ttd_bagian/stempel_bagian, data URL PNG/JPG ≤1MB; POST/DELETE /api/settings/ttd/{slot}, admin) diunggah di Pengaturan (TtdUpload.jsx); dicetak di blok tanda tangan (stempel menumpuk di kiri tanda tangan); switch "Cetak dengan tanda tangan" di ReportShell (default aktif, tidak disimpan)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

@@ -512,6 +512,31 @@ async def delete_kop(_=Depends(admin_user)):
     return {"ok": True}
 
 
+TTD_SLOTS = ("ttd_manager", "stempel_manager", "ttd_bagian", "stempel_bagian")
+
+
+@api.post("/settings/ttd/{slot}")
+async def upload_ttd(slot: str, file: UploadFile = File(...), _=Depends(admin_user)):
+    if slot not in TTD_SLOTS:
+        raise HTTPException(404, "Slot tidak dikenal")
+    if file.content_type not in ("image/png", "image/jpeg"):
+        raise HTTPException(400, "Gambar harus JPG atau PNG")
+    data = await file.read()
+    if len(data) > 1024 * 1024:
+        raise HTTPException(400, "Ukuran gambar maksimal 1 MB")
+    url = f"data:{file.content_type};base64,{base64.b64encode(data).decode()}"
+    await db.settings.update_one({"key": "app"}, {"$set": {slot: url}}, upsert=True)
+    return {slot: url}
+
+
+@api.delete("/settings/ttd/{slot}")
+async def delete_ttd(slot: str, _=Depends(admin_user)):
+    if slot not in TTD_SLOTS:
+        raise HTTPException(404, "Slot tidak dikenal")
+    await db.settings.update_one({"key": "app"}, {"$unset": {slot: ""}})
+    return {"ok": True}
+
+
 # ---------- Files ----------
 @api.post("/temp-files")
 async def upload_temp(file: UploadFile = File(...), _=Depends(current_user)):

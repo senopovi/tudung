@@ -4,6 +4,7 @@ import { Printer, FileSpreadsheet } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/context/AuthContext";
 import { tgl, todayISO } from "@/lib/api";
 
@@ -25,18 +26,25 @@ const Kop = ({ settings, p }) =>
     </div>
   );
 
-export const Signatures = ({ p, tanggal }) => (
+const TtdImg = ({ ttd, stempel }) => (
+  <div className="relative mx-auto h-20 w-48">
+    {stempel && <img src={stempel} alt="Stempel" className="absolute left-0 top-1/2 h-20 w-20 -translate-y-1/2 object-contain opacity-90" />}
+    {ttd && <img src={ttd} alt="Tanda tangan" className="absolute left-1/2 top-1/2 h-16 max-w-[9rem] -translate-x-1/2 -translate-y-1/2 object-contain" />}
+  </div>
+);
+
+export const Signatures = ({ p, tanggal, s = {} }) => (
   <div className="mt-8 grid grid-cols-2 gap-8 text-[10pt]" style={{ pageBreakInside: "avoid" }} data-testid="report-signatures">
     <div className="text-center">
       <p>&nbsp;</p>
       <p>Manager</p>
-      <div className="h-20" />
+      <TtdImg ttd={s.ttd_manager} stempel={s.stempel_manager} />
       <p className="font-bold underline">{p.manager || "(.............................)"}</p>
     </div>
     <div className="text-center">
       <p data-testid="report-signature-date">{p.kota?.trim() ? `${p.kota.trim()}, ` : ""}{tgl(tanggal || todayISO())}</p>
       <p>Bagian Tudung</p>
-      <div className="h-20" />
+      <TtdImg ttd={s.ttd_bagian} stempel={s.stempel_bagian} />
       <p className="font-bold underline">{p.bagian_tudung || "(.............................)"}</p>
     </div>
   </div>
@@ -53,6 +61,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
   const [kertas, setKertas] = useState(() => localStorage.getItem(kKey) || "A4");
   const pickKertas = (v) => { if (!v) return; setKertas(v); localStorage.setItem(kKey, v); };
   const [ttd, setTtd] = useState(todayISO());
+  const [denganTtd, setDenganTtd] = useState(true);
   const [w, h] = KERTAS[kertas] || KERTAS.A4;
   const [pw, ph] = ori === "landscape" ? [h, w] : [w, h];
   return (
@@ -60,6 +69,10 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
       <style>{`@page { size: ${pw}mm ${ph}mm; }`}</style>
       {filters && <div className="no-print rounded-lg border bg-white p-4 shadow-sm" data-testid="report-filters">{filters}</div>}
       <div className="no-print flex flex-wrap items-center justify-end gap-2">
+        <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <Switch checked={denganTtd} onCheckedChange={setDenganTtd} data-testid="report-with-signature-switch" />
+          Cetak dengan tanda tangan
+        </label>
         <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           Tgl. Tanda Tangan
           <Input type="date" value={ttd} onChange={(e) => setTtd(e.target.value || todayISO())} className="h-9 w-40" data-testid="report-signature-date-input" />
@@ -92,7 +105,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
                 ))}
               </div>
               {children}
-              <Signatures p={org.puskopdit} tanggal={ttd} />
+              <Signatures p={org.puskopdit} tanggal={ttd} s={denganTtd ? org.settings : {}} />
             </td></tr></tbody>
           </table>
         </div>

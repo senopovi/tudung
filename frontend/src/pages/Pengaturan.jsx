@@ -7,6 +7,7 @@ import { PageHeader, Field } from "@/components/Common";
 import { MoneyInput } from "@/components/MoneyInput";
 import { Switch } from "@/components/ui/switch";
 import { Confirm } from "@/components/Controls";
+import { TtdUpload } from "@/components/TtdUpload";
 import { useAuth } from "@/context/AuthContext";
 import { api, errMsg, todayISO } from "@/lib/api";
 
@@ -42,7 +43,7 @@ export default function Pengaturan() {
 
   const save = async () => {
     try {
-      const { kop_surat, ...body } = s;
+      const { kop_surat, ttd_manager, stempel_manager, ttd_bagian, stempel_bagian, ...body } = s;
       await api.put("/settings", body);
       await loadOrg();
       toast.success("Pengaturan disimpan");
@@ -127,6 +128,10 @@ export default function Pengaturan() {
             <Button onClick={() => ref.current?.click()} className="bg-[#155e46] hover:bg-[#0d3b2e]" data-testid="kop-upload-btn"><Upload className="mr-2 h-4 w-4" /> Upload JPG/PNG</Button>
             {org.settings.kop_surat && <Button variant="outline" onClick={delKop} data-testid="kop-delete-btn"><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>}
           </div>
+        </Card>
+
+        <Card title="Tanda Tangan & Stempel">
+          <TtdUpload />
         </Card>
 
         <Card title="Keamanan Akun Petugas">
