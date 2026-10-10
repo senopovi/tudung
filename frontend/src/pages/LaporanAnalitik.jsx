@@ -271,3 +271,52 @@ export function LapRating() {
     </ReportShell>
   );
 }
+
+const rasio = (r) => (r.iuran ? `${((r.cair / r.iuran) * 100).toFixed(1).replace(".", ",")}%` : "-");
+
+export function LapPerbandingan() {
+  const { org, isAdmin } = useAuth();
+  const [f, set] = useF({ tahun: thisYear, mode: "cu", cu_id: "" });
+  const range = { dari: `${f.tahun}-01-01`, sampai: `${f.tahun}-12-31` };
+  const iuran = useData("/iuran", range);
+  const cair = useData("/permohonan", { status: "Dicairkan", cair_dari: range.dari, cair_sampai: range.sampai });
+  const agg = (iu, cr, extra) => {
+    const i = iu.reduce((a, r) => a + (r.total || 0), 0);
+    const c = cr.reduce((a, r) => a + (r.analisis?.total_disetujui || 0), 0);
+    return { ...extra, iuran: i, cair: c, selisih: i - c, n: cr.length };
+  };
+  const rows = useMemo(() => {
+    if (f.mode === "cu") return org.cus.map((c) => agg(iuran.filter((r) => r.cu_id === c.id), cair.filter((r) => r.cu_id === c.id), { id: c.id, label: `${c.kode} — ${c.nama}` }));
+    const iu = f.cu_id ? iuran.filter((r) => r.cu_id === f.cu_id) : iuran;
+    const cr = f.cu_id ? cair.filter((r) => r.cu_id === f.cu_id) : cair;
+    return BULAN.map((b, i) => {
+      const m = `${f.tahun}-${pad(i + 1)}`;
+      return agg(iu.filter((r) => r.tanggal.startsWith(m)), cr.filter((r) => r.tanggal_cair?.startsWith(m)), { id: m, label: b });
+    });
+  }, [org.cus, iuran, cair, f.mode, f.cu_id, f.tahun]);
+  const tot = agg(f.mode === "cu" || !f.cu_id ? iuran : iuran.filter((r) => r.cu_id === f.cu_id), f.mode === "cu" || !f.cu_id ? cair : cair.filter((r) => r.cu_id === f.cu_id), {});
+  const cols = [
+    { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
+    { key: "label", label: f.mode === "cu" ? "Credit Union" : "Bulan" },
+    { key: "iuran", label: "Total Iuran Tudung", money: true, total: true },
+    { key: "n", label: "Jml Anggota Cair", center: true, total: true },
+    { key: "cair", label: "Total Pencairan Tudung", money: true, total: true },
+    { key: "selisih", label: "Selisih (Iuran - Pencairan)", money: true, total: true, value: (r) => r.selisih, render: (r) => r.selisih },
+    { key: "rasio", label: "Rasio Pencairan/Iuran", center: true, render: rasio },
+  ];
+  return (
+    <ReportShell title="Laporan Perbandingan Iuran dan Pencairan Tudung" fileName={`Perbandingan_Iuran_Pencairan_${f.tahun}_${f.mode}`}
+      lines={[f.mode === "cu" ? "Semua Credit Union" : cuLine(org.cus, f.cu_id), `Tahun ${f.tahun}${f.mode === "bulan" ? " • Detail Bulanan" : ""}`]}
+      filters={
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="Tampilan"><RG value={f.mode} onChange={set("mode")} testid="banding-mode" options={[["cu", "Ringkasan per CU"], ["bulan", "Detail Bulan per Bulan"]]} /></Field>
+          {f.mode === "bulan" && isAdmin && <Field label="Credit Union"><CuSelect value={f.cu_id} onChange={set("cu_id")} allowAll testid="banding-cu" /></Field>}
+          <Field label="Tahun"><Input type="number" value={f.tahun} onChange={(e) => set("tahun")(Number(e.target.value))} data-testid="banding-tahun" /></Field>
+        </div>
+      }>
+      <ReportTable columns={cols} rows={rows} labelSpan={2} />
+      <p className="mt-2 text-right text-[9pt]" data-testid="banding-rasio-total">Rasio total pencairan terhadap iuran: <b>{rasio(tot)}</b></p>
+    </ReportShell>
+  );
+}
+

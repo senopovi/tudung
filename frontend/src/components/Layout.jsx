@@ -33,6 +33,7 @@ const NAV = [
       { to: "/laporan/tren", label: "Tren Iuran & Pencairan", icon: FileBarChart },
       { to: "/laporan/usia", label: "Anggota per Usia", icon: FileBarChart },
       { to: "/laporan/rating", label: "Rating Credit Union", icon: FileBarChart },
+      { to: "/laporan/perbandingan", label: "Iuran vs Pencairan", icon: FileBarChart },
     ],
   },
   { group: "Data Induk", items: [{ to: "/data-induk", label: "Data Induk", icon: Database, admin: true }] },

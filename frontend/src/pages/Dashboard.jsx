@@ -4,16 +4,28 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/Common";
+import { CuSelect } from "@/components/Controls";
 import { useAuth } from "@/context/AuthContext";
 import { api, rp, tgl, BULAN } from "@/lib/api";
 
 const bln = (k) => `${BULAN[Number(k.slice(5, 7)) - 1].slice(0, 3)} ${k.slice(2, 4)}`;
 
-const Tren = ({ data }) => (
+const Tren = ({ initial }) => {
+  const { isAdmin } = useAuth();
+  const [cu, setCu] = useState("");
+  const [data, setData] = useState(initial);
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get("/dashboard/tren", { params: cu ? { cu_id: cu } : {} }).then((r) => setData(r.data));
+  }, [cu, isAdmin]);
+  return (
   <div className="mt-6 rounded-lg border bg-white p-6 shadow-sm" data-testid="dash-tren">
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <p className="flex items-center gap-2 text-sm font-semibold text-[#155e46]"><TrendingUp className="h-4 w-4" /> Tren Iuran & Pencairan 12 Bulan Terakhir</p>
-      <Link to="/laporan/tren" className="text-xs font-semibold text-amber-700 hover:underline" data-testid="dash-tren-link">Lihat laporan lengkap</Link>
+      <div className="flex items-center gap-3">
+        {isAdmin && <div className="w-64"><CuSelect value={cu} onChange={setCu} allowAll testid="dash-tren-cu" /></div>}
+        <Link to="/laporan/tren" className="text-xs font-semibold text-amber-700 hover:underline" data-testid="dash-tren-link">Lihat laporan lengkap</Link>
+      </div>
     </div>
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={data} margin={{ left: 10, right: 10 }}>
@@ -27,7 +39,8 @@ const Tren = ({ data }) => (
       </LineChart>
     </ResponsiveContainer>
   </div>
-);
+  );
+};
 
 const Stat = ({ icon: Icon, label, value, accent, testid }) => (
   <div className="rounded-lg border bg-white p-5 shadow-sm fade-up" data-testid={testid}>
@@ -93,7 +106,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Tren data={d.tren} />
+      <Tren initial={d.tren} />
 
       <div className="mt-6 rounded-lg border bg-white shadow-sm">
         <p className="border-b px-5 py-3 text-sm font-semibold text-[#155e46]">Permohonan Terbaru</p>

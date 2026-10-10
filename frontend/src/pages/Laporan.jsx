@@ -7,7 +7,7 @@ import { ReportShell, ReportTable, PencairanTable } from "@/components/Report";
 import { useAuth } from "@/context/AuthContext";
 import { api, tglS, tgl, ymdText, BULAN, KEJADIAN } from "@/lib/api";
 import LaporanIuran from "@/pages/LaporanIuran";
-import { LapSaldoPeriode, LapGenderPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating } from "@/pages/LaporanAnalitik";
+import { LapSaldoPeriode, LapGenderPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating, LapPerbandingan } from "@/pages/LaporanAnalitik";
 
 const useRows = (params, deps) => {
   const [rows, setRows] = useState([]);
@@ -186,6 +186,7 @@ const MAP = {
   tren: ["Tren Iuran & Pencairan", LapTren],
   usia: ["Laporan Anggota berdasarkan Usia", LapUsia],
   rating: ["Rating Credit Union", LapRating],
+  perbandingan: ["Perbandingan Iuran vs Pencairan", LapPerbandingan],
 };
 
 export default function Laporan() {
