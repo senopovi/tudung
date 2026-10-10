@@ -235,6 +235,7 @@ class UserIn(BaseModel):
     role: str = "petugas"
     cu_id: Optional[str] = None
     aktif: bool = True
+    hak_akses: Optional[dict] = None
 
 
 @api.get("/users")
@@ -297,7 +298,8 @@ def _user_doc(body: UserIn):
     if body.role == "petugas" and not body.cu_id:
         raise HTTPException(400, "Petugas wajib memilih Credit Union")
     return {"email": body.email.strip().lower(), "name": body.name, "role": body.role,
-            "cu_id": body.cu_id if body.role == "petugas" else None, "aktif": body.aktif}
+            "cu_id": body.cu_id if body.role == "petugas" else None, "aktif": body.aktif,
+            "hak_akses": {k: bool((body.hak_akses or {}).get(k, True)) for k in HAK_DEFAULT} if body.role == "petugas" else None}
 
 
 @api.post("/users")
@@ -373,9 +375,10 @@ class CUIn(BaseModel):
     alamat: str = ""
     telepon: str = ""
     hak_akses: dict = {}
+    jumlah_anggota: int = 0
 
 
-HAK_DEFAULT = {"input_iuran": True, "ubah_hapus_permohonan": True, "lihat_hasil_analisis": True, "lihat_laporan_permohonan": True}
+HAK_DEFAULT = {"input_iuran": True, "ubah_hapus_permohonan": True, "lihat_hasil_analisis": True, "lihat_laporan_permohonan": True, "lihat_laporan": True}
 BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
 
 
@@ -389,7 +392,8 @@ async def can(user, perm):
     if user["role"] == "admin":
         return True
     cu = await db.credit_unions.find_one({"id": user.get("cu_id")}, {"hak_akses": 1}) or {}
-    return {**HAK_DEFAULT, **(cu.get("hak_akses") or {})}.get(perm, False)
+    cu_ok = {**HAK_DEFAULT, **(cu.get("hak_akses") or {})}.get(perm, False)
+    return bool(cu_ok and (user.get("hak_akses") or {}).get(perm, True))
 
 
 async def require_perm(user, perm):
@@ -791,6 +795,7 @@ async def batal_pencairan(cid: str, background: BackgroundTasks, _=Depends(admin
 
 @api.get("/pencairan")
 async def list_pencairan(request: Request, user=Depends(current_user)):
+    await require_perm(user, "lihat_laporan")
     f = request.query_params
     q = {}
     cu = scope_cu(user, f.get("cu_id"))
@@ -808,6 +813,29 @@ async def list_pencairan(request: Request, user=Depends(current_user)):
     for r in rows:
         r["cu_nama"] = cus.get(r["cu_id"], {}).get("nama", "-")
     return rows
+
+
+async def _permil(q, cus, tahun):
+    pq = {**q, "tgl_kejadian": {"$gte": f"{tahun}-01-01", "$lte": f"{tahun}-12-31"}}
+    m = await db.permohonan.count_documents(pq)
+    ids = [q["cu_id"]] if q.get("cu_id") else list(cus)
+    anggota = sum(int(cus.get(i, {}).get("jumlah_anggota") or 0) for i in ids)
+    return {"tahun": tahun, "meninggal": m, "anggota": anggota, "permil": round(m / anggota * 1000, 2) if anggota else None}
+
+
+@api.get("/laporan/permil")
+async def laporan_permil(tahun: int, user=Depends(current_user)):
+    await require_perm(user, "lihat_laporan")
+    cus = await cu_map()
+    ids = [user["cu_id"]] if user["role"] != "admin" else sorted(cus, key=lambda i: cus[i].get("kode", ""))
+    out = []
+    for i in ids:
+        r = await _permil({"cu_id": i}, cus, tahun)
+        pq = {"cu_id": i, "tgl_kejadian": {"$gte": f"{tahun}-01-01", "$lte": f"{tahun}-12-31"}}
+        out.append({**r, "id": i, "kode": cus.get(i, {}).get("kode", "-"), "nama": cus.get(i, {}).get("nama", "-"),
+                    "l": await db.permohonan.count_documents({**pq, "jenis_kelamin": "L"}),
+                    "p": await db.permohonan.count_documents({**pq, "jenis_kelamin": "P"})})
+    return out
 
 
 # ---------- Iuran ----------
@@ -1019,7 +1047,7 @@ async def dashboard(user=Depends(current_user)):
         r["cu_nama"] = cus.get(r["cu_id"], {}).get("nama", "-")
     return {"total": len(rows), "status": status, "hasil": hasil, "cair": {**cair, "total": cair["sanduk"] + cair["lalau"]},
             "per_cu": [{"nama": k, "total": v} for k, v in sorted(per_cu.items(), key=lambda x: -x[1])],
-            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent, "tren": await _tren(q), "defisit": await _defisit(q, cus)}
+            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent, "tren": await _tren(q), "permil": await _permil(q, cus, today().year), "defisit": await _defisit(q, cus)}
 
 
 async def _defisit(q, cus):

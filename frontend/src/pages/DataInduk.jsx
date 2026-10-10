@@ -77,32 +77,38 @@ function CrudTab({ title, rows, columns, fields, onSave, onDelete, testid, rende
   );
 }
 
-const HAK = [["input_iuran", "Input & ubah iuran CU sendiri"], ["ubah_hapus_permohonan", "Ubah/hapus permohonan (selama Antrian Analisis)"], ["lihat_hasil_analisis", "Lihat hasil analisis & laporan analisis"], ["lihat_laporan_permohonan", "Lihat laporan data permohonan"]];
-const hakOf = (d) => ({ input_iuran: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, ...(d.hak_akses || {}) });
+const HAK = [["input_iuran", "Input & ubah iuran CU sendiri"], ["ubah_hapus_permohonan", "Ubah/hapus permohonan (selama Antrian Analisis)"], ["lihat_hasil_analisis", "Lihat hasil analisis & laporan analisis"], ["lihat_laporan_permohonan", "Lihat laporan data permohonan"], ["lihat_laporan", "Lihat menu Laporan & Daftar Bantuan Cair"]];
+const hakOf = (d) => ({ input_iuran: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, lihat_laporan: true, ...(d.hak_akses || {}) });
+
+const HakBoxes = ({ e, set, note, testid }) => (
+  <div className="space-y-2 rounded-md border bg-stone-50 p-3" data-testid={testid}>
+    <p className="text-[11px] text-muted-foreground">{note}</p>
+    {HAK.map(([h, l]) => (
+      <label key={h} className="flex items-center gap-2 text-sm">
+        <Checkbox checked={hakOf(e)[h]} onCheckedChange={(v) => set({ ...e, hak_akses: { ...hakOf(e), [h]: !!v } })} data-testid={`${testid}-${h}`} /> {l}
+      </label>
+    ))}
+  </div>
+);
 
 function CUTab() {
   const { org, loadOrg } = useAuth();
-  const renderField = (k, e, set) => (k !== "hak_akses" ? null : (
-    <div className="space-y-2 rounded-md border bg-stone-50 p-3" data-testid="cu-hak-akses">
-      <p className="text-[11px] text-muted-foreground">Selalu diizinkan: input permohonan, laporan pencairan & iuran CU sendiri. Analisis & pencairan hanya Admin Pusat.</p>
-      {HAK.map(([h, l]) => (
-        <label key={h} className="flex items-center gap-2 text-sm">
-          <Checkbox checked={hakOf(e)[h]} onCheckedChange={(v) => set({ ...e, hak_akses: { ...hakOf(e), [h]: !!v } })} data-testid={`hak-${h}`} /> {l}
-        </label>
-      ))}
-    </div>
-  ));
+  const renderField = (k, e, set) => {
+    if (k === "jumlah_anggota") return <Input type="number" min={0} value={e.jumlah_anggota || ""} onChange={(ev) => set({ ...e, jumlah_anggota: Number(ev.target.value) })} data-testid="cu-field-jumlah_anggota" />;
+    if (k !== "hak_akses") return null;
+    return <HakBoxes e={e} set={set} testid="hak" note="Selalu diizinkan: input permohonan & Dashboard CU sendiri. Analisis & pencairan hanya Admin Pusat. Hak per petugas bisa dibatasi lagi di Data User." />;
+  };
   const onSave = async (d) => {
     if (!d.kode || !d.nama) { toast.error("Kode dan Nama wajib diisi"); return false; }
     try {
-      const body = { ...Object.fromEntries(CU_FIELDS.map(([k]) => [k, d[k] || ""])), hak_akses: hakOf(d) };
+      const body = { ...Object.fromEntries(CU_FIELDS.map(([k]) => [k, d[k] || ""])), hak_akses: hakOf(d), jumlah_anggota: Number(d.jumlah_anggota) || 0 };
       d.id ? await api.put(`/cu/${d.id}`, body) : await api.post("/cu", body);
       await loadOrg(); toast.success("Credit Union disimpan"); return true;
     } catch (e) { toast.error(errMsg(e)); return false; }
   };
   const onDelete = async (d) => { try { await api.delete(`/cu/${d.id}`); await loadOrg(); toast.success("Credit Union dihapus"); } catch (e) { toast.error(errMsg(e)); } };
-  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={[...CU_FIELDS, ["hak_akses", "Hak Akses Petugas CU"]]} onSave={onSave} onDelete={onDelete} renderField={renderField}
-    columns={[["kode", "Kode"], ["nama", "Nama"], ["manager", "Manager"], ["bagian_tudung", "Bagian Tudung"], ["telepon", "Telepon"], ["hak", "Hak Akses Petugas", (r) => `${Object.values(hakOf(r)).filter(Boolean).length}/${HAK.length} tambahan`]]} />;
+  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={[...CU_FIELDS, ["jumlah_anggota", "Jumlah Anggota (untuk per mil)"], ["hak_akses", "Hak Akses Petugas CU"]]} onSave={onSave} onDelete={onDelete} renderField={renderField}
+    columns={[["kode", "Kode"], ["nama", "Nama"], ["manager", "Manager"], ["bagian_tudung", "Bagian Tudung"], ["telepon", "Telepon"], ["hak", "Hak Akses Petugas", (r) => `${Object.values(hakOf(r)).filter(Boolean).length}/${HAK.length}`], ["jumlah_anggota", "Jml Anggota", (r) => (r.jumlah_anggota ? new Intl.NumberFormat("id-ID").format(r.jumlah_anggota) : "-")]]} />;
 }
 
 const fmtWaktu = (s) => new Date(s).toLocaleString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -129,7 +135,7 @@ function UsersTab() {
   const cuName = (id) => org.cus.find((c) => c.id === id)?.nama || "-";
   const onSave = async (d) => {
     try {
-      const body = { email: d.email || "", name: d.name || "", password: d.password || null, role: d.role || "petugas", cu_id: d.cu_id || null, aktif: d.aktif !== false };
+      const body = { email: d.email || "", name: d.name || "", password: d.password || null, role: d.role || "petugas", cu_id: d.cu_id || null, aktif: d.aktif !== false, hak_akses: (d.role || "petugas") === "petugas" ? hakOf(d) : null };
       d.id ? await api.put(`/users/${d.id}`, body) : await api.post("/users", body);
       load(); toast.success("Pengguna disimpan"); return true;
     } catch (e) { toast.error(errMsg(e)); return false; }
@@ -138,13 +144,14 @@ function UsersTab() {
   const renderField = (k, e, set) => {
     if (k === "role") return <RG value={e.role || "petugas"} onChange={(v) => set({ ...e, role: v })} testid="user-role" options={[["petugas", "Petugas CU"], ["admin", "Admin Pusat"]]} />;
     if (k === "cu_id") return (e.role || "petugas") === "petugas" ? <CuSelect value={e.cu_id} onChange={(v) => set({ ...e, cu_id: v })} testid="user-cu-select" /> : <p className="py-2 text-xs text-muted-foreground">Admin Pusat mengakses semua CU</p>;
+    if (k === "hak_akses") return (e.role || "petugas") === "petugas" ? <HakBoxes e={e} set={set} testid="user-hak" note="Hak akses petugas ini. Tetap dibatasi oleh hak akses Credit Union-nya (tidak bisa melebihi)." /> : <p className="py-2 text-xs text-muted-foreground">Admin Pusat memiliki semua hak akses</p>;
     if (k === "aktif") return <RG value={e.aktif === false ? "tidak" : "ya"} onChange={(v) => set({ ...e, aktif: v === "ya" })} testid="user-aktif" options={[["ya", "Aktif"], ["tidak", "Nonaktif"]]} />;
     return null;
   };
   return (
     <>
     <CrudTab title="Pengguna" testid="user" rows={rows} onSave={onSave} onDelete={onDelete} renderField={renderField}
-    fields={[["name", "Nama"], ["email", "Email (Username)"], ["password", "Password (kosongkan bila tidak diubah)"], ["role", "Peran"], ["cu_id", "Credit Union"], ["aktif", "Status"]]}
+    fields={[["name", "Nama"], ["email", "Email (Username)"], ["password", "Password (kosongkan bila tidak diubah)"], ["role", "Peran"], ["cu_id", "Credit Union"], ["aktif", "Status"], ["hak_akses", "Hak Akses Petugas"]]}
     columns={[["name", "Nama"], ["email", "Email"], ["role", "Peran", (r) => (r.role === "admin" ? "Admin Pusat" : "Petugas CU")], ["cu", "Credit Union", (r) => (r.role === "admin" ? "Semua" : cuName(r.cu_id))], ["aktif", "Status", (r) => (r.aktif === false ? <span className="text-red-700" data-testid={`status-${r.id}`}>{r.nonaktif_otomatis ? "Nonaktif (otomatis)" : "Nonaktif"}</span> : "Aktif")], ["login", "Login Terakhir", (r) => <LastLogin r={r} onOpen={() => openHist(r)} />]]} />
     <Dialog open={!!hist} onOpenChange={() => setHist(null)}>
       <DialogContent className="max-w-lg" data-testid="login-history-dialog">

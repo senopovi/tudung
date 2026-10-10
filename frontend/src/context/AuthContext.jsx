@@ -31,8 +31,9 @@ export function AuthProvider({ children }) {
     setUser(false);
   };
 
-  const hak = { input_iuran: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, ...(org.cus.find((c) => c.id === user?.cu_id)?.hak_akses || {}) };
-  const can = (perm) => user?.role === "admin" || !!hak[perm];
+  const hak = { input_iuran: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, lihat_laporan: true, ...(org.cus.find((c) => c.id === user?.cu_id)?.hak_akses || {}) };
+  const uh = user?.hak_akses || {};
+  const can = (perm) => user?.role === "admin" || (!!hak[perm] && uh[perm] !== false);
 
   return (
     <AuthCtx.Provider value={{ user, login, logout, org, loadOrg, isAdmin: user?.role === "admin", can }}>

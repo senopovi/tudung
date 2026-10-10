@@ -7,8 +7,8 @@ import { ReportShell, ReportTable, PencairanTable } from "@/components/Report";
 import { useAuth } from "@/context/AuthContext";
 import { api, tglS, tgl, ymdText, BULAN, KEJADIAN } from "@/lib/api";
 import LaporanIuran from "@/pages/LaporanIuran";
-import { NAV } from "@/components/Layout";
-import { LapSaldoPeriode, LapGenderPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating, LapPerbandingan } from "@/pages/LaporanAnalitik";
+import { NAV, allowed } from "@/components/Layout";
+import { LapSaldoPeriode, LapGenderPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating, LapPerbandingan, LapPerMil } from "@/pages/LaporanAnalitik";
 
 const useRows = (params, deps) => {
   const [rows, setRows] = useState([]);
@@ -188,13 +188,14 @@ const MAP = {
   usia: ["Laporan Anggota berdasarkan Usia", LapUsia],
   rating: ["Rating Credit Union", LapRating],
   perbandingan: ["Perbandingan Iuran vs Pencairan", LapPerbandingan],
+  permil: ["Angka Kematian per Mil (‰)", LapPerMil],
 };
 
 export default function Laporan() {
   const { jenis } = useParams();
   const { isAdmin, can } = useAuth();
   const item = NAV.flatMap((g) => g.items).find((i) => i.to === `/laporan/${jenis}`);
-  if (!MAP[jenis] || !item || (item.admin && !isAdmin) || (item.perm && !can(item.perm))) return <Navigate to="/" replace />;
+  if (!MAP[jenis] || !item || !allowed(item, isAdmin, can)) return <Navigate to="/" replace />;
   const [title, Comp] = MAP[jenis] || MAP.permohonan;
   return (
     <div>

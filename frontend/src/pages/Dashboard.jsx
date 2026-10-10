@@ -127,6 +127,15 @@ export default function Dashboard() {
 
       <Defisit d={d.defisit} />
 
+      <div className="mt-6 flex flex-wrap items-center gap-6 rounded-lg border bg-white p-5 shadow-sm" data-testid="dash-permil">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Angka Kematian/CTT per Mil • {d.permil.tahun}</p>
+          <p className="mt-1 text-3xl font-extrabold tabular-nums text-[#0d3b2e]" data-testid="dash-permil-value">{d.permil.permil === null ? "-" : `${String(d.permil.permil).replace(".", ",")} ‰`}</p>
+        </div>
+        <p className="text-sm text-muted-foreground">{d.permil.meninggal} anggota meninggal/CTT dari {rp(d.permil.anggota)} anggota{d.permil.permil === null ? " — isi Jumlah Anggota di Data Credit Union" : ` (≈ ${String(d.permil.permil).replace(".", ",")} dari setiap 1.000 anggota)`}</p>
+        <Link to="/laporan/permil" className="ml-auto text-xs font-semibold text-amber-700 hover:underline" data-testid="dash-permil-link">Lihat per CU</Link>
+      </div>
+
       <Tren initial={d.tren} />
 
       <div className="mt-6 rounded-lg border bg-white shadow-sm">

@@ -35,6 +35,7 @@ const NAV = [
       { to: "/laporan/usia", label: "Anggota per Usia", icon: FileBarChart, admin: true },
       { to: "/laporan/rating", label: "Rating Credit Union", icon: FileBarChart, admin: true },
       { to: "/laporan/perbandingan", label: "Iuran vs Pencairan", icon: FileBarChart, admin: true },
+      { to: "/laporan/permil", label: "Angka Kematian per Mil", icon: FileBarChart },
     ],
   },
   { group: "Data Induk", items: [{ to: "/data-induk", label: "Data Induk", icon: Database, admin: true }] },
@@ -44,7 +45,7 @@ const NAV = [
 const NavList = ({ isAdmin, can, onNav }) => (
   <nav className="space-y-5 px-3 py-4">
     {NAV.map((g) => {
-      const items = g.items.filter((i) => (!i.admin || isAdmin) && (!i.perm || can(i.perm)));
+      const items = g.items.filter((i) => allowed(i, isAdmin, can));
       if (!items.length) return null;
       return (
         <div key={g.group}>
@@ -79,6 +80,12 @@ const Brand = () => (
     </div>
   </div>
 );
+
+export const allowed = (i, isAdmin, can) => {
+  if (isAdmin) return true;
+  if (i.admin || (i.perm && !can(i.perm))) return false;
+  return !(i.to.startsWith("/laporan") || i.to === "/bantuan-cair") || can("lihat_laporan");
+};
 
 export { NAV };
 
