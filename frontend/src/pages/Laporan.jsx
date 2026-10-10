@@ -6,7 +6,7 @@ import { CuSelect, SimpleSelect } from "@/components/Controls";
 import { ReportShell, ReportTable, PencairanTable } from "@/components/Report";
 import { useAuth } from "@/context/AuthContext";
 import { api, tglS, tgl, ymdText, BULAN, KEJADIAN } from "@/lib/api";
-import LaporanIuran from "@/pages/LaporanIuran";
+import LaporanIuran, { LapRekapIuranCU } from "@/pages/LaporanIuran";
 import { NAV, allowed } from "@/components/Layout";
 import { LapSaldoPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating, LapPerbandingan, LapPerMil } from "@/pages/LaporanAnalitik";
 
@@ -181,6 +181,7 @@ const MAP = {
   rekap: ["Rekap Pencairan per Credit Union", LapRekap],
   cu: ["Laporan Data Credit Union", LapCU],
   iuran: ["Laporan Iuran Tudung", LaporanIuran],
+  "rekap-iuran": ["Rekap Tahunan Iuran Semua CU", LapRekapIuranCU],
   "saldo-periode": ["Laporan Saldo Pencairan per Periode", LapSaldoPeriode],
   "tidak-disetujui": ["Laporan Permohonan Tidak Disetujui", LapTidakDisetujui],
   tren: ["Tren Iuran & Pencairan", LapTren],

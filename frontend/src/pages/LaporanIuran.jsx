@@ -74,6 +74,45 @@ const RekapTable = ({ months, tot }) => (
   </table>
 );
 
+export function LapRekapIuranCU() {
+  const { org } = useAuth();
+  const [tahun, setTahun] = useState(new Date().getFullYear());
+  const [rows, setRows] = useState([]);
+  useEffect(() => {
+    api.get("/iuran", { params: { dari: `${tahun - 1}-12-01`, sampai: `${tahun}-12-31` } }).then((r) => setRows(r.data));
+  }, [tahun]);
+  const data = useMemo(() => org.cus.map((c) => {
+    const rs = rows.filter((r) => r.cu_id === c.id);
+    return { id: c.id, kode: c.kode, nama: c.nama, ...Object.fromEntries(REKAP.map(([k]) => [k, rs.reduce((a, r) => a + (r[k] || 0), 0)])) };
+  }), [rows, org.cus]);
+  const tot = Object.fromEntries(REKAP.map(([k]) => [k, data.reduce((a, r) => a + r[k], 0)]));
+  return (
+    <ReportShell title="Rekap Tahunan Iuran Semua Credit Union" lines={[`Tahun Buku ${tahun}`, `Jumlah: ${org.cus.length} Credit Union`]} fileName={`Rekap_Iuran_Semua_CU_${tahun}`}
+      filters={<div className="max-w-xs"><Field label="Tahun Buku"><Input type="number" value={tahun} onChange={(e) => setTahun(Number(e.target.value))} data-testid="rekap-iuran-cu-tahun" /></Field></div>}>
+      <table className="rpt-table" id="report-table" data-testid="rekap-iuran-cu-table">
+        <thead><tr><th>No.</th><th>Kode</th><th>Credit Union</th>{REKAP.map(([k, l]) => <th key={k}>{l}</th>)}<th>Total Iuran</th></tr></thead>
+        <tbody>
+          {data.length === 0 && <tr><td colSpan={8} className="ctr">Tidak ada data</td></tr>}
+          {data.map((r, i) => (
+            <tr key={r.id} data-testid={`rekap-iuran-cu-row-${r.id}`}>
+              <td className="ctr">{i + 1}</td><td className="ctr">{r.kode}</td><td>{r.nama}</td>
+              {REKAP.map(([k]) => <td key={k} className="num">{f(r[k])}</td>)}
+              <td className="num">{f(rekapTotal(r))}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr data-testid="rekap-iuran-cu-total">
+            <td colSpan={3} className="ctr">JUMLAH</td>
+            {REKAP.map(([k]) => <td key={k} className="num">{f(tot[k])}</td>)}
+            <td className="num">{f(rekapTotal(tot))}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </ReportShell>
+  );
+}
+
 export default function LaporanIuran() {
   const { org, isAdmin, user } = useAuth();
   const [cu, setCu] = useState(isAdmin ? org.cus[0]?.id || "" : user.cu_id);

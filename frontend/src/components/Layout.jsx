@@ -28,6 +28,7 @@ const NAV = [
       { to: "/laporan/rekap", label: "Rekap Pencairan per CU", icon: FileBarChart, admin: true },
       { to: "/laporan/cu", label: "Lap. Data Credit Union", icon: FileBarChart, admin: true },
       { to: "/laporan/iuran", label: "Lap. Iuran Tudung", icon: FileBarChart },
+      { to: "/laporan/rekap-iuran", label: "Rekap Iuran Semua CU", icon: FileBarChart, admin: true },
       { to: "/laporan/saldo-periode", label: "Saldo Pencairan per Periode", icon: FileBarChart },
       { to: "/laporan/tidak-disetujui", label: "Permohonan Tidak Disetujui", icon: FileBarChart, perm: "lihat_hasil_analisis" },
       { to: "/laporan/tren", label: "Tren Iuran & Pencairan", icon: FileBarChart },
