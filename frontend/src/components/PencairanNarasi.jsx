@@ -6,7 +6,7 @@ export const Narasi = ({ items, testid }) => (
   <ol className="mt-2 space-y-1 text-[9.5pt] leading-snug" data-testid={testid}>
     {items.map((r, i) => (
       <li key={r.id} data-testid={`${testid}-${i}`}>
-        {r.no ?? i + 1}. Tudung a.n.: <b>{r.nama}</b> dengan BA. {r.ba}: <b>{r.hasil}</b> karena {r.alasan}.
+        {i + 1}. Tudung a.n.: <b>{r.nama}</b> dengan BA. {r.ba}: <b>{r.hasil}</b> karena {r.alasan}.
       </li>
     ))}
   </ol>

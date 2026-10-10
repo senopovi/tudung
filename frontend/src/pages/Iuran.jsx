@@ -11,20 +11,21 @@ import { api, errMsg, rp, tglS, todayISO, sum } from "@/lib/api";
 
 const blank = () => ({ tanggal: todayISO(), sanduk: 0, lalau: 0, keterangan: "", biris: 0, gppk: 0, keterangan2: "" });
 
-const EntryRow = ({ e, i, onChange, onRemove, canRemove }) => {
+const EntryRow = ({ e, i, onChange, onRemove, canRemove, ok }) => {
   const set = (k) => (v) => onChange({ ...e, [k]: v?.target ? v.target.value : v });
+  const lock = (k) => (ok(k) ? null : <span className="ml-1 text-[10px] font-normal text-red-600">(tidak ada hak)</span>);
   return (
     <div className="relative rounded-md border bg-stone-50/60 p-4" data-testid={`iuran-entry-${i}`}>
       {canRemove && <button type="button" onClick={onRemove} className="absolute right-2 top-2 text-muted-foreground hover:text-red-600" data-testid={`iuran-entry-remove-${i}`}><X className="h-4 w-4" /></button>}
       <p className="mb-3 text-xs font-bold uppercase tracking-wider text-amber-700">Pembayaran #{i + 1}</p>
       <div className="grid gap-3 md:grid-cols-4">
         <Field label="Tanggal Bayar Iuran"><Input type="date" value={e.tanggal} onChange={set("tanggal")} data-testid={`iuran-tanggal-${i}`} /></Field>
-        <Field label="Iuran Sanduk (Simpanan)"><MoneyInput value={e.sanduk} onChange={set("sanduk")} testid={`iuran-sanduk-${i}`} /></Field>
-        <Field label="Iuran Lalau (Pinjaman)"><MoneyInput value={e.lalau} onChange={set("lalau")} testid={`iuran-lalau-${i}`} /></Field>
+        <Field label={<>Iuran Sanduk (Simpanan){lock("sanduk")}</>}><MoneyInput value={e.sanduk} onChange={set("sanduk")} disabled={!ok("sanduk")} testid={`iuran-sanduk-${i}`} /></Field>
+        <Field label={<>Iuran Lalau (Pinjaman){lock("lalau")}</>}><MoneyInput value={e.lalau} onChange={set("lalau")} disabled={!ok("lalau")} testid={`iuran-lalau-${i}`} /></Field>
         <Field label="Total Iuran Tudung"><MoneyInput value={(e.sanduk || 0) + (e.lalau || 0)} onChange={() => {}} disabled testid={`iuran-total-${i}`} /></Field>
         <Field label="Keterangan Iuran Tudung" className="md:col-span-4"><Input value={e.keterangan} onChange={set("keterangan")} data-testid={`iuran-ket-${i}`} /></Field>
-        <Field label="Saldo Biris Pangkaras"><MoneyInput value={e.biris} onChange={set("biris")} testid={`iuran-biris-${i}`} /></Field>
-        <Field label="Iuran Solidaritas GPPK"><MoneyInput value={e.gppk} onChange={set("gppk")} testid={`iuran-gppk-${i}`} /></Field>
+        <Field label={<>Saldo Biris Pangkaras{lock("biris")}</>}><MoneyInput value={e.biris} onChange={set("biris")} disabled={!ok("biris")} testid={`iuran-biris-${i}`} /></Field>
+        <Field label={<>Iuran Solidaritas GPPK{lock("gppk")}</>}><MoneyInput value={e.gppk} onChange={set("gppk")} disabled={!ok("gppk")} testid={`iuran-gppk-${i}`} /></Field>
         <Field label="Keterangan Biris / GPPK" className="md:col-span-2"><Input value={e.keterangan2} onChange={set("keterangan2")} data-testid={`iuran-ket2-${i}`} /></Field>
       </div>
     </div>
@@ -33,7 +34,9 @@ const EntryRow = ({ e, i, onChange, onRemove, canRemove }) => {
 
 export default function Iuran() {
   const { isAdmin, user, can } = useAuth();
-  const bolehInput = can("input_iuran");
+  const ok = (k) => can(`iuran_${k}`);
+  const bolehInput = can("input_iuran") && ["sanduk", "lalau", "biris", "gppk"].some(ok);
+  const bolehRow = (r) => ["sanduk", "lalau", "biris", "gppk"].every((k) => ok(k) || !r[k]);
   const [cu, setCu] = useState(isAdmin ? "" : user.cu_id);
   const [tahun, setTahun] = useState(new Date().getFullYear());
   const [rows, setRows] = useState([]);
@@ -79,7 +82,7 @@ export default function Iuran() {
         <section className="space-y-4 rounded-lg border bg-white p-5 shadow-sm" data-testid="iuran-form">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#155e46]">{editId ? "Ubah Data Iuran" : "Input Pembayaran Iuran"}</h2>
           {entries.map((e, i) => (
-            <EntryRow key={i} e={e} i={i} canRemove={entries.length > 1} onChange={(n) => setEntries((a) => a.map((x, j) => (j === i ? n : x)))} onRemove={() => setEntries((a) => a.filter((_, j) => j !== i))} />
+            <EntryRow key={i} e={e} i={i} ok={ok} canRemove={entries.length > 1} onChange={(n) => setEntries((a) => a.map((x, j) => (j === i ? n : x)))} onRemove={() => setEntries((a) => a.filter((_, j) => j !== i))} />
           ))}
           <div className="flex flex-wrap justify-between gap-2">
             {!editId ? (
@@ -119,7 +122,7 @@ export default function Iuran() {
                   {bolehInput && (
                     <div className="flex justify-end gap-1">
                       <Button size="icon" variant="ghost" onClick={() => { setEditId(r.id); setEntries([{ ...r }]); window.scrollTo({ top: 0, behavior: "smooth" }); }} data-testid={`iuran-edit-${r.id}`}><Pencil className="h-4 w-4 text-amber-700" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setDel(r)} data-testid={`iuran-delete-${r.id}`}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                      {bolehRow(r) && <Button size="icon" variant="ghost" onClick={() => setDel(r)} data-testid={`iuran-delete-${r.id}`}><Trash2 className="h-4 w-4 text-red-600" /></Button>}
                     </div>
                   )}
                 </td>

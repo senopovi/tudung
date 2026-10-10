@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
     setUser(false);
   };
 
-  const hak = { input_iuran: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, lihat_laporan: true, ...(org.cus.find((c) => c.id === user?.cu_id)?.hak_akses || {}) };
+  const hak = { input_iuran: true, iuran_sanduk: true, iuran_lalau: true, iuran_biris: true, iuran_gppk: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, lihat_laporan: true, ...(org.cus.find((c) => c.id === user?.cu_id)?.hak_akses || {}) };
   const uh = user?.hak_akses || {};
   const can = (perm) => user?.role === "admin" || (!!hak[perm] && uh[perm] !== false);
 

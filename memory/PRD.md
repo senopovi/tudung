@@ -66,6 +66,8 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) CTT berkas lengkap & < 180 hari -> "Ditunda" (bukan Tidak Disetujui), analisis.tunda_ctt + tgl_ctt_180; cron harian reanalisis_ctt otomatis menganalisis ulang saat genap 180 hari (analis "sistem (otomatis 180 hari)")
 - (2026-10-10) Surat Daftar Bantuan Cair: snapshot pencairan.sebagian (narasi Disetujui Sebagian, no = urutan tabel by nama) + pencairan.tertahan (Ditunda/Tidak Disetujui CU yang sama, hanya sekali via permohonan.lapor_pencairan_id; di-unset saat batal pencairan / analisis ulang) + kalimat penutup (PencairanNarasi.jsx). Format "N. Tudung a.n.: NAMA dengan BA. BA: HASIL karena ALASAN." (alasan_text di calc.py)
 - (2026-10-10) Tanda tangan: Admin Pusat mencetak -> selalu PUSKOPDIT; tanda tangan CU hanya saat Petugas CU mencetak
+- (2026-10-10) Narasi Disetujui Sebagian di surat pencairan selalu bernomor mulai 1 (hanya baris Disetujui Sebagian)
+- (2026-10-10) Hak input iuran per jenis: iuran_sanduk/iuran_lalau/iuran_biris/iuran_gppk (default aktif) di Hak Akses CU & User; backend _check_jenis menolak tambah/ubah/hapus nilai jenis yang tidak diizinkan; form Iuran menonaktifkan kolom "(tidak ada hak)"
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

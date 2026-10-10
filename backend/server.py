@@ -456,7 +456,8 @@ class CUIn(BaseModel):
     anggota_per_tahun: dict = {}
 
 
-HAK_DEFAULT = {"input_iuran": True, "ubah_hapus_permohonan": True, "lihat_hasil_analisis": True, "lihat_laporan_permohonan": True, "lihat_laporan": True}
+IURAN_JENIS = {"sanduk": "Sanduk", "lalau": "Lalau", "biris": "Biris Pangkaras", "gppk": "Sol. GPPK"}
+HAK_DEFAULT = {"input_iuran": True, "iuran_sanduk": True, "iuran_lalau": True, "iuran_biris": True, "iuran_gppk": True, "ubah_hapus_permohonan": True, "lihat_hasil_analisis": True, "lihat_laporan_permohonan": True, "lihat_laporan": True}
 BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
 
 
@@ -1096,6 +1097,16 @@ async def _own_iuran(iid, user):
     if not doc:
         raise HTTPException(404, "Iuran tidak ditemukan")
     check_cu(user, doc["cu_id"])
+    return doc
+
+
+async def _check_jenis(user, new, old=None):
+    if user["role"] == "admin":
+        return
+    for k, label in IURAN_JENIS.items():
+        changed = int(new.get(k) or 0) != int((old or {}).get(k) or 0)
+        if changed and not await can(user, f"iuran_{k}"):
+            raise HTTPException(403, f"Anda tidak memiliki hak akses untuk input iuran {label}")
 
 
 @api.get("/iuran")
@@ -1126,6 +1137,7 @@ async def create_iuran(body: IuranBatch, background: BackgroundTasks, user=Depen
     await require_perm(user, "input_iuran")
     for i in body.items:
         check_cu(user, i.cu_id)
+        await _check_jenis(user, i.model_dump())
     docs = [{**_iuran(i), "id": new_id(), "created_at": now_iso()} for i in body.items]
     await db.iuran.insert_many(docs)
     background.add_task(check_defisit)
@@ -1136,8 +1148,9 @@ async def create_iuran(body: IuranBatch, background: BackgroundTasks, user=Depen
 async def update_iuran(iid: str, body: IuranIn, background: BackgroundTasks, user=Depends(current_user)):
     background.add_task(check_defisit)
     await require_perm(user, "input_iuran")
-    await _own_iuran(iid, user)
+    old = await _own_iuran(iid, user)
     check_cu(user, body.cu_id)
+    await _check_jenis(user, body.model_dump(), old)
     await db.iuran.update_one({"id": iid}, {"$set": _iuran(body)})
     return {"ok": True}
 
@@ -1146,7 +1159,7 @@ async def update_iuran(iid: str, body: IuranIn, background: BackgroundTasks, use
 async def delete_iuran(iid: str, background: BackgroundTasks, user=Depends(current_user)):
     background.add_task(check_defisit)
     await require_perm(user, "input_iuran")
-    await _own_iuran(iid, user)
+    await _check_jenis(user, {}, await _own_iuran(iid, user))
     await db.iuran.delete_one({"id": iid})
     return {"ok": True}
 

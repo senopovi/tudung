@@ -79,8 +79,8 @@ function CrudTab({ title, rows, columns, fields, onSave, onDelete, testid, rende
   );
 }
 
-const HAK = [["input_iuran", "Input & ubah iuran CU sendiri"], ["ubah_hapus_permohonan", "Ubah/hapus permohonan (selama Antrian Analisis)"], ["lihat_hasil_analisis", "Lihat hasil analisis & laporan analisis"], ["lihat_laporan_permohonan", "Lihat laporan data permohonan"], ["lihat_laporan", "Lihat menu Laporan & Daftar Bantuan Cair"]];
-const hakOf = (d) => ({ input_iuran: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, lihat_laporan: true, ...(d.hak_akses || {}) });
+const HAK = [["input_iuran", "Input & ubah iuran CU sendiri"], ["iuran_sanduk", "— Iuran Sanduk"], ["iuran_lalau", "— Iuran Lalau"], ["iuran_biris", "— Iuran Biris Pangkaras"], ["iuran_gppk", "— Iuran Solidaritas GPPK"], ["ubah_hapus_permohonan", "Ubah/hapus permohonan (Antrian Analisis, Ditunda, Tidak Disetujui)"], ["lihat_hasil_analisis", "Lihat hasil analisis & laporan analisis"], ["lihat_laporan_permohonan", "Lihat laporan data permohonan"], ["lihat_laporan", "Lihat menu Laporan & Daftar Bantuan Cair"]];
+const hakOf = (d) => ({ input_iuran: true, iuran_sanduk: true, iuran_lalau: true, iuran_biris: true, iuran_gppk: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, lihat_laporan: true, ...(d.hak_akses || {}) });
 
 const HakBoxes = ({ e, set, note, testid }) => (
   <div className="space-y-2 rounded-md border bg-stone-50 p-3" data-testid={testid}>
