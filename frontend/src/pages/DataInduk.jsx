@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -197,10 +198,11 @@ function UsersTab() {
 }
 
 export default function DataInduk() {
+  const [params] = useSearchParams();
   return (
     <div>
       <PageHeader title="Data Induk" subtitle="Profil Puskopdit, Credit Union anggota, dan pengguna aplikasi." />
-      <Tabs defaultValue="puskopdit">
+      <Tabs defaultValue={["puskopdit", "cu", "users"].includes(params.get("tab")) ? params.get("tab") : "puskopdit"}>
         <TabsList className="mb-4">
           <TabsTrigger value="puskopdit" data-testid="tab-puskopdit">Data PUSKOPDIT</TabsTrigger>
           <TabsTrigger value="cu" data-testid="tab-cu">Data Credit Union</TabsTrigger>

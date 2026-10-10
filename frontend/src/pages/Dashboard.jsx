@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp, AlertTriangle } from "lucide-react";
+import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp, AlertTriangle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/Common";
 import { CuSelect } from "@/components/Controls";
@@ -79,7 +79,7 @@ const Stat = ({ icon: Icon, label, value, accent, testid }) => (
 );
 
 export default function Dashboard() {
-  const { user, org } = useAuth();
+  const { user, org, isAdmin } = useAuth();
   const [d, setD] = useState(null);
   useEffect(() => { api.get("/dashboard").then((r) => setD(r.data)); }, []);
   if (!d) return <p className="text-sm text-muted-foreground">Memuat dashboard...</p>;
@@ -139,7 +139,12 @@ export default function Dashboard() {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Angka Kematian/CTT per Mil • {d.permil.tahun}</p>
           <p className="mt-1 text-3xl font-extrabold tabular-nums text-[#0d3b2e]" data-testid="dash-permil-value">{d.permil.permil === null ? "-" : `${String(d.permil.permil).replace(".", ",")} ‰`}</p>
         </div>
-        <p className="text-sm text-muted-foreground">{d.permil.meninggal_terhitung} anggota meninggal/CTT dari {rp(d.permil.anggota)} anggota{d.permil.permil === null ? " — isi Jumlah Anggota di Data Credit Union" : ` (≈ ${String(d.permil.permil).replace(".", ",")} dari setiap 1.000 anggota)`}</p>
+        <p className="text-sm text-muted-foreground">{d.permil.meninggal_terhitung} anggota meninggal/CTT dari {rp(d.permil.anggota)} anggota{d.permil.permil === null ? (isAdmin ? "" : " — hubungi Admin Pusat untuk mengisi Jumlah Anggota") : ` (≈ ${String(d.permil.permil).replace(".", ",")} dari setiap 1.000 anggota)`}</p>
+        {d.permil.permil === null && isAdmin && (
+          <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-700" data-testid="dash-permil-isi-anggota-btn">
+            <Link to="/data-induk?tab=cu"><Users className="mr-2 h-4 w-4" /> Isi Jumlah Anggota</Link>
+          </Button>
+        )}
         <Link to="/laporan/permil" className="ml-auto text-xs font-semibold text-amber-700 hover:underline" data-testid="dash-permil-link">Lihat per CU</Link>
       </div>
 
