@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Save, Upload, Trash2, Plus, X } from "lucide-react";
+import { Save, Upload, Trash2, Plus, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader, Field } from "@/components/Common";
@@ -24,6 +24,15 @@ export default function Pengaturan() {
   const [demo, setDemo] = useState(null);
   const [askReset, setAskReset] = useState(false);
   const [notif, setNotif] = useState([]);
+  const [sending, setSending] = useState(false);
+  const kirimUji = async () => {
+    setSending(true);
+    try {
+      const { data } = await api.post("/notifikasi/uji");
+      toast.success(`Email uji dikirim ke ${data.penerima.join(", ")}. Periksa inbox/spam.`);
+    } catch (e) { toast.error(errMsg(e, "Gagal mengirim email uji")); }
+    finally { setSending(false); api.get("/notifikasi").then((r) => setNotif(r.data)); }
+  };
   const loadDemo = () => api.get("/demo-data").then((r) => setDemo(r.data));
   useEffect(() => { api.get("/settings").then((r) => setS(r.data)); loadDemo(); api.get("/notifikasi").then((r) => setNotif(r.data)); }, []);
   if (!s) return <p className="text-sm text-muted-foreground">Memuat...</p>;
@@ -121,6 +130,9 @@ export default function Pengaturan() {
 
         <Card title="Notifikasi Email Defisit">
           <p className="text-sm text-muted-foreground">Email otomatis dikirim ke semua Admin Pusat aktif setiap kali ada Credit Union yang baru masuk status defisit (pencairan melebihi iuran tahun berjalan). Pengecekan berjalan setelah pencairan, batal pencairan, dan perubahan iuran.</p>
+          <Button onClick={kirimUji} disabled={sending} variant="outline" className="mt-4" data-testid="kirim-email-uji-btn">
+            <Send className="mr-2 h-4 w-4" /> {sending ? "Mengirim..." : "Kirim email uji"}
+          </Button>
           <div className="mt-4 space-y-2" data-testid="notif-log">
             {notif.length === 0 && <p className="rounded border border-dashed p-4 text-center text-xs text-muted-foreground">Belum ada notifikasi terkirim.</p>}
             {notif.map((n) => (

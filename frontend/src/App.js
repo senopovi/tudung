@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
+import { LupaPassword, ResetPassword } from "@/pages/PasswordReset";
 import Dashboard from "@/pages/Dashboard";
 import PermohonanList from "@/pages/PermohonanList";
 import PermohonanForm from "@/pages/PermohonanForm";
@@ -33,6 +34,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/lupa-password" element={<LupaPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<Guard><Layout /></Guard>}>
             <Route index element={<Dashboard />} />
             <Route path="permohonan" element={<PermohonanList />} />

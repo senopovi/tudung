@@ -7,6 +7,8 @@ import os
 import re
 import uuid
 import base64
+import hashlib
+import secrets
 import logging
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
@@ -137,6 +139,66 @@ async def login(body: LoginIn, request: Request):
 @api.get("/auth/me")
 async def me(user=Depends(current_user)):
     return user
+
+
+class ForgotIn(BaseModel):
+    email: str
+
+
+class ResetIn(BaseModel):
+    token: str
+    password: str
+
+
+def _tok_hash(t):
+    return hashlib.sha256(t.encode()).hexdigest()
+
+
+RESET_MSG = "Jika email terdaftar, tautan reset password telah dikirim. Periksa inbox/spam Anda."
+
+
+@api.post("/auth/forgot-password")
+async def forgot_password(body: ForgotIn):
+    email = body.email.strip().lower()
+    user = await db.users.find_one({"email": email, "aktif": {"$ne": False}})
+    if not user:
+        return {"message": RESET_MSG}
+    hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+    if await db.password_reset_tokens.count_documents({"user_id": user["id"], "created_at": {"$gte": hour_ago}}) >= 3:
+        return {"message": RESET_MSG}
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    await db.password_reset_tokens.insert_one({"token_hash": _tok_hash(token), "user_id": user["id"], "used": False,
+                                               "created_at": now, "expires_at": now + timedelta(hours=1)})
+    link = f"{os.environ['FRONTEND_URL'].rstrip('/')}/reset-password?token={token}"
+    html = (
+        '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1c1917">'
+        f'<h2 style="color:#155e46;margin:0 0 12px">Reset Password {escape(EMAIL_FROM_NAME)}</h2>'
+        f'<p>Halo {escape(user.get("name", ""))}, kami menerima permintaan untuk mengatur ulang password akun Anda.</p>'
+        f'<p><a href="{escape(link)}" style="display:inline-block;background:#155e46;color:#ffffff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Atur Ulang Password</a></p>'
+        '<p>Tautan berlaku 1 jam dan hanya bisa dipakai sekali. Jika Anda tidak meminta reset, abaikan email ini; password Anda tidak berubah.</p>'
+        f'<p style="font-size:12px;color:#888">Email otomatis dari {escape(EMAIL_FROM_NAME)}. Kami tidak pernah meminta password Anda melalui email.</p>'
+        '</td></tr></table>')
+    ok, info = await send_email(to=[email], subject=f"Reset Password {EMAIL_FROM_NAME}", html=html)
+    if not ok:
+        logger.warning(f"Reset email gagal untuk {email}: {info}")
+    return {"message": RESET_MSG}
+
+
+@api.post("/auth/reset-password")
+async def reset_password(body: ResetIn):
+    if len(body.password) < 6:
+        raise HTTPException(400, "Password minimal 6 karakter")
+    t = await db.password_reset_tokens.find_one({"token_hash": _tok_hash(body.token)})
+    exp = t and t["expires_at"].replace(tzinfo=t["expires_at"].tzinfo or timezone.utc)
+    if not t or t["used"] or exp < datetime.now(timezone.utc):
+        raise HTTPException(400, "Tautan reset tidak valid atau sudah kedaluwarsa. Silakan minta ulang.")
+    await db.users.update_one({"id": t["user_id"]}, {"$set": {"password_hash": hash_pw(body.password)}})
+    await db.password_reset_tokens.update_many({"user_id": t["user_id"]}, {"$set": {"used": True}})
+    user = await db.users.find_one({"id": t["user_id"]}, {"email": 1})
+    if user:
+        await db.login_attempts.delete_many({"identifier": {"$regex": f":{re.escape(user['email'])}$"}})
+    return {"message": "Password berhasil diubah. Silakan login dengan password baru."}
 
 
 # ---------- Users ----------
@@ -787,6 +849,26 @@ async def list_notif(_=Depends(admin_user)):
     return await db.notif_log.find({}, {"_id": 0}).sort("created_at", -1).to_list(20)
 
 
+@api.post("/notifikasi/uji")
+async def kirim_uji(user=Depends(admin_user)):
+    minute_ago = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    if await db.notif_log.find_one({"jenis": "uji", "created_at": {"$gte": minute_ago}}):
+        raise HTTPException(429, "Tunggu 1 menit sebelum mengirim email uji lagi")
+    admins = [u["email"] for u in await db.users.find({"role": "admin", "aktif": {"$ne": False}}, {"email": 1}).to_list(100)]
+    html = (
+        '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1c1917">'
+        f'<h2 style="color:#155e46;margin:0 0 12px">Email Uji {escape(EMAIL_FROM_NAME)}</h2>'
+        '<p>Ini adalah email uji. Jika Anda menerima email ini, notifikasi peringatan defisit Credit Union akan sampai ke inbox Anda.</p>'
+        f'<p>Dikirim atas permintaan {escape(user["name"])}.</p>'
+        f'<p style="font-size:12px;color:#888">Email otomatis dari {escape(EMAIL_FROM_NAME)}.</p></td></tr></table>')
+    ok, info = await send_email(to=admins, subject=f"[{EMAIL_FROM_NAME}] Email Uji Notifikasi", html=html)
+    await db.notif_log.insert_one({"id": new_id(), "jenis": "uji", "tahun": today().year, "cu": ["Email Uji"], "penerima": admins,
+                                   "terkirim": ok, "info": info, "created_at": now_iso()})
+    if not ok:
+        raise HTTPException(502, f"Email uji gagal dikirim ({info})")
+    return {"penerima": admins}
+
+
 # ---------- Dashboard ----------
 @api.get("/dashboard")
 async def dashboard(user=Depends(current_user)):
@@ -865,6 +947,8 @@ app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.envi
 async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
+    await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await db.password_reset_tokens.create_index("token_hash")
     await db.permohonan.create_index("id", unique=True)
     await db.permohonan.create_index([("cu_id", 1), ("status", 1)])
     await db.pencairan.create_index("nomor", unique=True)
@@ -873,8 +957,6 @@ async def startup():
     if not existing:
         await db.users.insert_one({"id": new_id(), "email": email, "name": "Admin Pusat", "role": "admin", "cu_id": None,
                                    "aktif": True, "password_hash": hash_pw(pw), "created_at": now_iso()})
-    elif not verify_pw(pw, existing["password_hash"]):
-        await db.users.update_one({"email": email}, {"$set": {"password_hash": hash_pw(pw)}})
     old = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
     await db.temp_files.delete_many({"created_at": {"$lt": old}})
 

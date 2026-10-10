@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +58,10 @@ export default function Login() {
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required data-testid="login-email-input" className="bg-white" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wide text-[#57534e]">Password</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[#57534e]">Password</label>
+              <Link to="/lupa-password" className="text-xs font-semibold text-amber-700 hover:underline" data-testid="forgot-password-link">Lupa password?</Link>
+            </div>
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required data-testid="login-password-input" className="bg-white" />
           </div>
           {err && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" data-testid="login-error">{err}</p>}
