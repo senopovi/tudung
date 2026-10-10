@@ -131,7 +131,7 @@ export default function Pengaturan() {
         </Card>
 
         <Card title="Tanda Tangan & Stempel">
-          <TtdUpload />
+          <TtdUpload data={org.settings} onChange={loadOrg} />
         </Card>
 
         <Card title="Keamanan Akun Petugas">

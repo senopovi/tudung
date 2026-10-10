@@ -2,24 +2,21 @@ import { useRef } from "react";
 import { toast } from "sonner";
 import { Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
 import { api, errMsg } from "@/lib/api";
 
 const SLOTS = [["manager", "Manager"], ["bagian", "Bagian Tudung"]];
 
-const Slot = ({ slot, label }) => {
-  const { org, loadOrg } = useAuth();
+const Slot = ({ slot, label, img, base, onChange }) => {
   const ref = useRef(null);
-  const img = org.settings[slot];
   const upload = async (e) => {
     const f = e.target.files?.[0]; e.target.value = "";
     if (!f) return;
     if (!["image/png", "image/jpeg"].includes(f.type)) return toast.error("Gambar harus JPG atau PNG");
     if (f.size > 1024 * 1024) return toast.error("Ukuran gambar maksimal 1 MB");
     const fd = new FormData(); fd.append("file", f);
-    try { await api.post(`/settings/ttd/${slot}`, fd); await loadOrg(); toast.success(`${label} diperbarui`); } catch (er) { toast.error(errMsg(er)); }
+    try { await api.post(`${base}/${slot}`, fd); await onChange(); toast.success(`${label} diperbarui`); } catch (er) { toast.error(errMsg(er)); }
   };
-  const del = async () => { try { await api.delete(`/settings/ttd/${slot}`); await loadOrg(); toast.success(`${label} dihapus`); } catch (er) { toast.error(errMsg(er)); } };
+  const del = async () => { try { await api.delete(`${base}/${slot}`); await onChange(); toast.success(`${label} dihapus`); } catch (er) { toast.error(errMsg(er)); } };
   return (
     <div className="space-y-2" data-testid={`ttd-slot-${slot}`}>
       <p className="text-xs font-semibold text-muted-foreground">{label}</p>
@@ -35,12 +32,12 @@ const Slot = ({ slot, label }) => {
   );
 };
 
-export const TtdUpload = () => (
+export const TtdUpload = ({ data = {}, base = "/settings/ttd", onChange, names = {} }) => (
   <div className="space-y-5">
     {SLOTS.map(([k, l]) => (
       <div key={k} className="grid gap-4 sm:grid-cols-2">
-        <Slot slot={`ttd_${k}`} label={`Tanda Tangan ${l}`} />
-        <Slot slot={`stempel_${k}`} label={`Stempel ${l}`} />
+        <Slot slot={`ttd_${k}`} label={`Tanda Tangan ${l}${names[k] ? ` (${names[k]})` : ""}`} img={data[`ttd_${k}`]} base={base} onChange={onChange} />
+        <Slot slot={`stempel_${k}`} label={`Stempel ${l}`} img={data[`stempel_${k}`]} base={base} onChange={onChange} />
       </div>
     ))}
     <p className="text-xs text-muted-foreground">PNG berlatar transparan memberi hasil terbaik. Maks. 1 MB per gambar. Stempel dicetak sedikit menumpuk di samping tanda tangan.</p>

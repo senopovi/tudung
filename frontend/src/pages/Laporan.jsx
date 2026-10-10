@@ -62,7 +62,7 @@ function LapPermohonan() {
     { key: "status", label: "Status" },
   ];
   return (
-    <ReportShell title="Laporan Data Permohonan Tudung" lines={usePeriodLine(f, "terima_dari", "terima_sampai", "Tanggal Terima Berkas")} fileName="Laporan_Permohonan"
+    <ReportShell cuId={f.cu_id} title="Laporan Data Permohonan Tudung" lines={usePeriodLine(f, "terima_dari", "terima_sampai", "Tanggal Terima Berkas")} fileName="Laporan_Permohonan"
       filters={<Filters f={f} set={set} extra={<>
         <Field label="Status"><SimpleSelect value={f.status} onChange={set("status")} testid="lap-filter-status" options={[["Antrian Analisis", "Antrian Analisis"], ["Sudah Dianalisis", "Sudah Dianalisis"], ["Dicairkan", "Dicairkan"]]} /></Field>
         <Field label="Jenis Kelamin"><SimpleSelect value={f.jk} onChange={set("jk")} testid="lap-filter-jk" options={[["L", "Laki-laki"], ["P", "Perempuan"]]} /></Field>
@@ -91,7 +91,7 @@ function LapAnalisis() {
     { key: "hasil", label: "Hasil", render: (r) => a(r).hasil },
   ];
   return (
-    <ReportShell title="Laporan Data Analisis Permohonan Tudung" lines={[...usePeriodLine(f, "terima_dari", "terima_sampai", "Tanggal Terima Berkas"), f.hasil ? `Hasil: ${f.hasil}` : null]} fileName="Laporan_Analisis"
+    <ReportShell cuId={f.cu_id} title="Laporan Data Analisis Permohonan Tudung" lines={[...usePeriodLine(f, "terima_dari", "terima_sampai", "Tanggal Terima Berkas"), f.hasil ? `Hasil: ${f.hasil}` : null]} fileName="Laporan_Analisis"
       filters={<Filters f={f} set={set} extra={
         <Field label="Hasil Analisis"><SimpleSelect value={f.hasil} onChange={set("hasil")} testid="lap-filter-hasil" options={["Disetujui", "Disetujui Sebagian", "Ditunda", "Tidak Disetujui"].map((x) => [x, x])} /></Field>
       } />}>
@@ -104,7 +104,7 @@ function LapPencairan() {
   const [f, set] = useF({ cu_id: "", cair_dari: "", cair_sampai: "", status: "Dicairkan" });
   const rows = useRows(f, [f]);
   return (
-    <ReportShell title="Laporan Pencairan Bantuan Tudung" lines={usePeriodLine(f, "cair_dari", "cair_sampai", "Tanggal Pencairan")} fileName="Laporan_Pencairan"
+    <ReportShell cuId={f.cu_id} title="Laporan Pencairan Bantuan Tudung" lines={usePeriodLine(f, "cair_dari", "cair_sampai", "Tanggal Pencairan")} fileName="Laporan_Pencairan"
       filters={<Filters f={f} set={set} dateLabel="Tgl Cair" dk={["cair_dari", "cair_sampai"]} />}>
       <PencairanTable rows={rows} />
     </ReportShell>

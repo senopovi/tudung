@@ -49,7 +49,7 @@ export default function LaporanIuran() {
   const cuName = org.cus.find((c) => c.id === cu)?.nama || "-";
 
   return (
-    <ReportShell title="Laporan Iuran Tudung" lines={[cuName, `Tahun Buku ${tahun}`, jenis === "rekap" ? "(Rekap Bulanan)" : null]} fileName={`Iuran_${cuName}_${tahun}_${jenis}`}
+    <ReportShell cuId={cu} title="Laporan Iuran Tudung" lines={[cuName, `Tahun Buku ${tahun}`, jenis === "rekap" ? "(Rekap Bulanan)" : null]} fileName={`Iuran_${cuName}_${tahun}_${jenis}`}
       filters={
         <div className="grid gap-3 md:grid-cols-3">
           <Field label="Credit Union"><CuSelect value={cu} onChange={setCu} disabled={!isAdmin} testid="lap-iuran-cu" /></Field>

@@ -46,6 +46,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Subjudul laporan "Format A4/F4"; input "Tgl. Tanda Tangan" di ReportShell (default hari ini, tidak disimpan) -> Signatures tanggal
 - (2026-10-10) puskopdit.kota (default "Pontianak" via GET bila belum disimpan; diatur di Data PUSKOPDIT "Kota Tanda Tangan") -> blok tanda tangan "Kota, tanggal"; kosong = hanya tanggal
 - (2026-10-10) Tanda tangan & stempel (settings.ttd_manager/stempel_manager/ttd_bagian/stempel_bagian, data URL PNG/JPG ≤1MB; POST/DELETE /api/settings/ttd/{slot}, admin) diunggah di Pengaturan (TtdUpload.jsx); dicetak di blok tanda tangan (stempel menumpuk di kiri tanda tangan); switch "Cetak dengan tanda tangan" di ReportShell (default aktif, tidak disimpan)
+- (2026-10-10) Tanda tangan per CU: koleksi cu_ttd {cu_id, ttd_/stempel_ manager/bagian}; GET/POST/DELETE /api/cu/{cid}/ttd[/{slot}] (admin semua CU, petugas hanya CU sendiri via check_cu); menu "Tanda Tangan CU" (/tanda-tangan-cu, grup Pengaturan, semua role). ReportShell prop cuId (atau cu_id petugas): laporan satu CU memakai nama Manager/Bagian Tudung + gambar CU (kota tetap dari PUSKOPDIT); laporan semua CU memakai PUSKOPDIT. cuId dipasang di Lap. Permohonan/Analisis/Pencairan, Iuran, Bantuan Cair, Saldo/Penerima periode, Tidak Disetujui, Tren, Usia
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

@@ -79,7 +79,7 @@ export function LapSaldoPeriode() {
     { key: "total", label: "JUMLAH", money: true, total: true },
   ];
   return (
-    <ReportShell title="Laporan Saldo Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Saldo_Pencairan_${f.tipe}_${f.tahun}`}
+    <ReportShell cuId={f.cu_id} title="Laporan Saldo Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Saldo_Pencairan_${f.tipe}_${f.tahun}`}
       filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
       <ReportTable columns={cols} rows={rows} labelSpan={2} />
     </ReportShell>
@@ -98,7 +98,7 @@ export function LapGenderPeriode() {
     { key: "n", label: "JUMLAH", center: true, total: true },
   ];
   return (
-    <ReportShell title="Laporan Jumlah Penerima Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Penerima_Pencairan_${f.tipe}_${f.tahun}`}
+    <ReportShell cuId={f.cu_id} title="Laporan Jumlah Penerima Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Penerima_Pencairan_${f.tipe}_${f.tahun}`}
       filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
       <ReportTable columns={cols} rows={rows} labelSpan={2} />
     </ReportShell>
@@ -125,7 +125,7 @@ export function LapTidakDisetujui() {
     { key: "alasan", label: "Alasan (Hasil Analisis)", render: alasan },
   ];
   return (
-    <ReportShell title={`Laporan Data Permohonan ${f.hasil}`} lines={[cuLine(org.cus, f.cu_id)]} fileName="Permohonan_Tidak_Disetujui"
+    <ReportShell cuId={f.cu_id} title={`Laporan Data Permohonan ${f.hasil}`} lines={[cuLine(org.cus, f.cu_id)]} fileName="Permohonan_Tidak_Disetujui"
       filters={
         <div className="grid gap-3 md:grid-cols-4">
           {isAdmin && <Field label="Credit Union"><CuSelect value={f.cu_id} onChange={set("cu_id")} allowAll testid="an-filter-cu" /></Field>}
@@ -161,7 +161,7 @@ export function LapTren() {
     { key: "cair", label: "Saldo Pencairan", money: true, total: true },
   ];
   return (
-    <ReportShell title="Tren Iuran dan Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `Tahun ${f.tahun}`]} fileName={`Tren_Iuran_Pencairan_${f.tahun}`}
+    <ReportShell cuId={f.cu_id} title="Tren Iuran dan Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `Tahun ${f.tahun}`]} fileName={`Tren_Iuran_Pencairan_${f.tahun}`}
       filters={
         <div className="grid gap-3 md:grid-cols-3">
           {isAdmin && <Field label="Credit Union"><CuSelect value={f.cu_id} onChange={set("cu_id")} allowAll testid="an-filter-cu" /></Field>}
@@ -216,7 +216,7 @@ export function LapUsia() {
     { key: "lalau", label: "Lalau Diajukan", money: true, total: true },
   ];
   return (
-    <ReportShell title={`Laporan Data Anggota Meninggal/CTT berdasarkan ${f.dasar === "meninggal" ? "Usia Meninggal" : "Usia Masuk"}`}
+    <ReportShell cuId={f.cu_id} title={`Laporan Data Anggota Meninggal/CTT berdasarkan ${f.dasar === "meninggal" ? "Usia Meninggal" : "Usia Masuk"}`}
       lines={[cuLine(org.cus, f.cu_id), f.tahun ? `Tahun Kejadian ${f.tahun}` : "Seluruh Tahun"]} fileName={`Anggota_per_Usia_${f.dasar}`}
       filters={
         <div className="grid gap-3 md:grid-cols-4">

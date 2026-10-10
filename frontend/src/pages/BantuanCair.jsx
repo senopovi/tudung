@@ -73,7 +73,7 @@ export default function BantuanCair() {
             </div>
           )}
           {cur && (
-            <ReportShell title="Daftar Pencairan Bantuan Tudung" lines={[`Nomor: ${cur.nomor}`, `Credit Union: ${cur.cu_nama}`, `Tanggal Pencairan: ${tgl(cur.tanggal)}`]} fileName={`Pencairan_${cur.nomor.replace(/\//g, "-")}`}>
+            <ReportShell cuId={cur.cu_id} title="Daftar Pencairan Bantuan Tudung" lines={[`Nomor: ${cur.nomor}`, `Credit Union: ${cur.cu_nama}`, `Tanggal Pencairan: ${tgl(cur.tanggal)}`]} fileName={`Pencairan_${cur.nomor.replace(/\//g, "-")}`}>
               <PencairanTable rows={rows} />
             </ReportShell>
           )}

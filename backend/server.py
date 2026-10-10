@@ -537,6 +537,38 @@ async def delete_ttd(slot: str, _=Depends(admin_user)):
     return {"ok": True}
 
 
+def _check_ttd(user, cid, slot=None):
+    check_cu(user, cid)
+    if slot is not None and slot not in TTD_SLOTS:
+        raise HTTPException(404, "Slot tidak dikenal")
+
+
+@api.get("/cu/{cid}/ttd")
+async def get_cu_ttd(cid: str, user=Depends(current_user)):
+    _check_ttd(user, cid)
+    return await db.cu_ttd.find_one({"cu_id": cid}, {"_id": 0}) or {"cu_id": cid}
+
+
+@api.post("/cu/{cid}/ttd/{slot}")
+async def upload_cu_ttd(cid: str, slot: str, file: UploadFile = File(...), user=Depends(current_user)):
+    _check_ttd(user, cid, slot)
+    if file.content_type not in ("image/png", "image/jpeg"):
+        raise HTTPException(400, "Gambar harus JPG atau PNG")
+    data = await file.read()
+    if len(data) > 1024 * 1024:
+        raise HTTPException(400, "Ukuran gambar maksimal 1 MB")
+    url = f"data:{file.content_type};base64,{base64.b64encode(data).decode()}"
+    await db.cu_ttd.update_one({"cu_id": cid}, {"$set": {slot: url}}, upsert=True)
+    return {slot: url}
+
+
+@api.delete("/cu/{cid}/ttd/{slot}")
+async def delete_cu_ttd(cid: str, slot: str, user=Depends(current_user)):
+    _check_ttd(user, cid, slot)
+    await db.cu_ttd.update_one({"cu_id": cid}, {"$unset": {slot: ""}})
+    return {"ok": True}
+
+
 # ---------- Files ----------
 @api.post("/temp-files")
 async def upload_temp(file: UploadFile = File(...), _=Depends(current_user)):

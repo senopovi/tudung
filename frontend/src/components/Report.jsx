@@ -1,12 +1,12 @@
 import * as XLSX from "xlsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Printer, FileSpreadsheet } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/context/AuthContext";
-import { tgl, todayISO } from "@/lib/api";
+import { api, tgl, todayISO } from "@/lib/api";
 
 export function exportExcel(fileName) {
   const el = document.getElementById("report-table");
@@ -52,8 +52,14 @@ export const Signatures = ({ p, tanggal, s = {} }) => (
 
 const KERTAS = { A4: [210, 297], F4: [215, 330] };
 
-export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true }) => {
-  const { org } = useAuth();
+export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true, cuId }) => {
+  const { org, user, isAdmin } = useAuth();
+  const sigCu = cuId || (!isAdmin ? user?.cu_id : "");
+  const [cuTtd, setCuTtd] = useState({});
+  useEffect(() => { setCuTtd({}); if (sigCu) api.get(`/cu/${sigCu}/ttd`).then((r) => setCuTtd(r.data)).catch(() => {}); }, [sigCu]);
+  const cuRow = sigCu && org.cus.find((c) => c.id === sigCu);
+  const sigP = cuRow ? { kota: org.puskopdit.kota, manager: cuRow.manager, bagian_tudung: cuRow.bagian_tudung } : org.puskopdit;
+  const sigS = cuRow ? cuTtd : org.settings;
   const key = `tudung-orientasi:${title}`;
   const [ori, setOri] = useState(() => localStorage.getItem(key) || "portrait");
   const pickOri = (v) => { if (!v) return; setOri(v); localStorage.setItem(key, v); };
@@ -105,7 +111,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
                 ))}
               </div>
               {children}
-              <Signatures p={org.puskopdit} tanggal={ttd} s={denganTtd ? org.settings : {}} />
+              <Signatures p={sigP} tanggal={ttd} s={denganTtd ? sigS : {}} />
             </td></tr></tbody>
           </table>
         </div>

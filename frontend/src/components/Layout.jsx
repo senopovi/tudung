@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, FileStack, FilePlus2, ScanSearch, HandCoins, ReceiptText, Wallet, FileBarChart, Database, Settings, LogOut, Menu, ShieldCheck, Building2 } from "lucide-react";
+import { LayoutDashboard, FileStack, FilePlus2, ScanSearch, HandCoins, ReceiptText, Wallet, FileBarChart, Database, Settings, LogOut, Menu, ShieldCheck, Building2, PenLine } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -39,7 +39,7 @@ const NAV = [
     ],
   },
   { group: "Data Induk", items: [{ to: "/data-induk", label: "Data Induk", icon: Database, admin: true }] },
-  { group: "Pengaturan", items: [{ to: "/pengaturan", label: "Pengaturan Aplikasi", icon: Settings, admin: true }] },
+  { group: "Pengaturan", items: [{ to: "/pengaturan", label: "Pengaturan Aplikasi", icon: Settings, admin: true }, { to: "/tanda-tangan-cu", label: "Tanda Tangan CU", icon: PenLine }] },
 ];
 
 const NavList = ({ isAdmin, can, onNav }) => (

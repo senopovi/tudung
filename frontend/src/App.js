@@ -17,6 +17,7 @@ import Iuran from "@/pages/Iuran";
 import Laporan from "@/pages/Laporan";
 import DataInduk from "@/pages/DataInduk";
 import Pengaturan from "@/pages/Pengaturan";
+import TandaTanganCU from "@/pages/TandaTanganCU";
 
 const Guard = ({ children, admin }) => {
   const { user, isAdmin } = useAuth();
@@ -50,6 +51,7 @@ function App() {
             <Route path="laporan/:jenis" element={<Laporan />} />
             <Route path="data-induk" element={A(<DataInduk />)} />
             <Route path="pengaturan" element={A(<Pengaturan />)} />
+            <Route path="tanda-tangan-cu" element={<TandaTanganCU />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
