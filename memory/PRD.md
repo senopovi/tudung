@@ -59,6 +59,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Persentase Laki-laki/Perempuan (1 desimal, format id-ID) di bawah angka pada baris JUMLAH tabel Saldo Pencairan per Periode; disembunyikan bila total penerima 0
 - (2026-10-10) Persentase L/P per baris periode di Saldo Pencairan per Periode
 - (2026-10-10) Laporan Iuran Tudung dipecah: tabel 1 (Sanduk, Lalau, Saldo, Keterangan) + halaman baru (ReportShell prop `extra`, class .report-next-page break-before page) "LAPORAN IURAN / BIRIS PANGKARAS DAN SOLIDARITAS GPPK" (Biris, Sol. GPPK, Saldo = Biris+GPPK, Keterangan2) dengan CU, Tahun Buku, dan blok tanda tangan sendiri; Ekspor Excel menambah sheet "Laporan 2" (#report-table-2)
+- (2026-10-10) Halaman ke-3 Laporan Iuran: "REKAP TAHUNAN IURAN" (No, Bulan, Sanduk, Lalau, Biris Pangkaras, Sol. GPPK, Total Iuran + JUMLAH) dengan tanda tangan; ReportShell `extra` menerima array halaman; Excel sheet "Laporan 3" (#report-table-3)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

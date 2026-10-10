@@ -49,6 +49,31 @@ const IuranTable = ({ t, id, testid, jenis, months, tot }) => (
   </table>
 );
 
+const REKAP = [["sanduk", "Sanduk"], ["lalau", "Lalau"], ["biris", "Biris Pangkaras"], ["gppk", "Sol. GPPK"]];
+const rekapTotal = (r) => REKAP.reduce((a, [k]) => a + (r?.[k] || 0), 0);
+
+const RekapTable = ({ months, tot }) => (
+  <table className="rpt-table" id="report-table-3" data-testid="iuran-rekap-table">
+    <thead><tr><th>No.</th><th>Bulan</th>{REKAP.map(([k, l]) => <th key={k}>{l}</th>)}<th>Total Iuran</th></tr></thead>
+    <tbody>
+      {months.map((mo, i) => (
+        <tr key={mo.label}>
+          <td className="ctr">{i + 1}</td><td>{mo.label}</td>
+          {REKAP.map(([k]) => <td key={k} className="num">{f(mo.agg?.[k])}</td>)}
+          <td className="num">{f(rekapTotal(mo.agg))}</td>
+        </tr>
+      ))}
+    </tbody>
+    <tfoot>
+      <tr data-testid="iuran-rekap-table-total">
+        <td colSpan={2} className="ctr">JUMLAH</td>
+        {REKAP.map(([k]) => <td key={k} className="num">{f(tot[k])}</td>)}
+        <td className="num">{f(rekapTotal(tot))}</td>
+      </tr>
+    </tfoot>
+  </table>
+);
+
 export default function LaporanIuran() {
   const { org, isAdmin, user } = useAuth();
   const [cu, setCu] = useState(isAdmin ? org.cus[0]?.id || "" : user.cu_id);
@@ -79,8 +104,12 @@ export default function LaporanIuran() {
 
   return (
     <ReportShell cuId={cu} title="Laporan Iuran Tudung" lines={[cuName, `Tahun Buku ${tahun}`, rekapLine]} fileName={`Iuran_${cuName}_${tahun}_${jenis}`}
-      extra={{ titles: ["Laporan Iuran", "Biris Pangkaras dan Solidaritas GPPK"], lines: [cuName, `Tahun Buku ${tahun}`, rekapLine],
-        content: <IuranTable t={T2} id="report-table-2" testid="iuran-biris-report-table" {...props} /> }}
+      extra={[
+        { titles: ["Laporan Iuran", "Biris Pangkaras dan Solidaritas GPPK"], lines: [cuName, `Tahun Buku ${tahun}`, rekapLine],
+          content: <IuranTable t={T2} id="report-table-2" testid="iuran-biris-report-table" {...props} /> },
+        { titles: ["Rekap Tahunan Iuran"], lines: [cuName, `Tahun Buku ${tahun}`], testid: "report-rekap-page",
+          content: <RekapTable months={months} tot={tot} /> },
+      ]}
       filters={
         <div className="grid gap-3 md:grid-cols-3">
           <Field label="Credit Union"><CuSelect value={cu} onChange={setCu} disabled={!isAdmin} testid="lap-iuran-cu" /></Field>
