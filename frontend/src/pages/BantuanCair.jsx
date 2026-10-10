@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Confirm } from "@/components/Controls";
 import { Input } from "@/components/ui/input";
 import { PageHeader, Field } from "@/components/Common";
 import { CuSelect } from "@/components/Controls";
+import { errMsg } from "@/lib/api";
 import { ReportShell, PencairanTable } from "@/components/Report";
 import { useAuth } from "@/context/AuthContext";
 import { api, rp, tgl, tglS } from "@/lib/api";
@@ -12,11 +17,23 @@ export default function BantuanCair() {
   const [f, setF] = useState({ cu_id: "", dari: "", sampai: "" });
   const [cur, setCur] = useState(null);
   const [rows, setRows] = useState([]);
+  const [batal, setBatal] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     const params = Object.fromEntries(Object.entries(f).filter(([, v]) => v));
     api.get("/pencairan", { params }).then((r) => { setBatches(r.data); setCur(r.data[0] || null); });
   }, [f]);
+  useEffect(load, [load]);
+  const doBatal = async () => {
+    setBatal(false);
+    try {
+      const { data } = await api.delete(`/pencairan/${cur.id}`);
+      toast.success(`Pencairan ${cur.nomor} dibatalkan • ${data.dikembalikan} data kembali ke daftar siap cair`);
+      load();
+    } catch (e) {
+      toast.error(errMsg(e, "Gagal membatalkan pencairan"));
+    }
+  };
   useEffect(() => {
     if (!cur) return setRows([]);
     api.get("/permohonan", { params: { pencairan_id: cur.id } }).then((r) => setRows([...r.data].sort((a, b) => a.nama.localeCompare(b.nama))));
@@ -48,6 +65,13 @@ export default function BantuanCair() {
           </div>
         </div>
         <div className="min-w-0">
+          {cur && isAdmin && (
+            <div className="no-print mb-3 flex justify-start">
+              <Button variant="outline" onClick={() => setBatal(true)} className="border-red-300 text-red-700 hover:bg-red-50" data-testid="batal-pencairan-btn">
+                <Undo2 className="mr-2 h-4 w-4" /> Batalkan Pencairan Ini
+              </Button>
+            </div>
+          )}
           {cur && (
             <ReportShell title="Daftar Pencairan Bantuan Tudung" lines={[`Nomor: ${cur.nomor}`, `Credit Union: ${cur.cu_nama}`, `Tanggal Pencairan: ${tgl(cur.tanggal)}`]} fileName={`Pencairan_${cur.nomor.replace(/\//g, "-")}`}>
               <PencairanTable rows={rows} />
@@ -55,6 +79,8 @@ export default function BantuanCair() {
           )}
         </div>
       </div>
+      <Confirm open={batal} onOpenChange={setBatal} confirmText="Batalkan Pencairan" title="Batalkan Pencairan?"
+        desc={`Pencairan ${cur?.nomor} akan dihapus dan ${cur?.jumlah_anggota} data anggota dikembalikan ke daftar siap cair (Pencairan Tudung).`} onConfirm={doBatal} />
     </div>
   );
 }

@@ -593,6 +593,18 @@ async def cairkan(body: CairIn, user=Depends(admin_user)):
     return doc
 
 
+@api.delete("/pencairan/{cid}")
+async def batal_pencairan(cid: str, _=Depends(admin_user)):
+    doc = await db.pencairan.find_one({"id": cid})
+    if not doc:
+        raise HTTPException(404, "Pencairan tidak ditemukan")
+    r = await db.permohonan.update_many({"pencairan_id": cid}, {
+        "$set": {"status": S_DIANALISIS, "tunda_pencairan": False},
+        "$unset": {"pencairan_id": "", "nomor_pencairan": "", "tanggal_cair": ""}})
+    await db.pencairan.delete_one({"id": cid})
+    return {"dikembalikan": r.modified_count}
+
+
 @api.get("/pencairan")
 async def list_pencairan(request: Request, user=Depends(current_user)):
     f = request.query_params
@@ -636,6 +648,13 @@ def _iuran(i: IuranIn):
     return d
 
 
+async def _own_iuran(iid, user):
+    doc = await db.iuran.find_one({"id": iid})
+    if not doc:
+        raise HTTPException(404, "Iuran tidak ditemukan")
+    check_cu(user, doc["cu_id"])
+
+
 @api.get("/iuran")
 async def list_iuran(request: Request, user=Depends(current_user)):
     f = request.query_params
@@ -658,22 +677,27 @@ async def list_iuran(request: Request, user=Depends(current_user)):
 
 
 @api.post("/iuran")
-async def create_iuran(body: IuranBatch, _=Depends(admin_user)):
+async def create_iuran(body: IuranBatch, user=Depends(current_user)):
     if not body.items:
         raise HTTPException(400, "Tidak ada data iuran")
+    for i in body.items:
+        check_cu(user, i.cu_id)
     docs = [{**_iuran(i), "id": new_id(), "created_at": now_iso()} for i in body.items]
     await db.iuran.insert_many(docs)
     return {"disimpan": len(docs)}
 
 
 @api.put("/iuran/{iid}")
-async def update_iuran(iid: str, body: IuranIn, _=Depends(admin_user)):
+async def update_iuran(iid: str, body: IuranIn, user=Depends(current_user)):
+    await _own_iuran(iid, user)
+    check_cu(user, body.cu_id)
     await db.iuran.update_one({"id": iid}, {"$set": _iuran(body)})
     return {"ok": True}
 
 
 @api.delete("/iuran/{iid}")
-async def delete_iuran(iid: str, _=Depends(admin_user)):
+async def delete_iuran(iid: str, user=Depends(current_user)):
+    await _own_iuran(iid, user)
     await db.iuran.delete_one({"id": iid})
     return {"ok": True}
 
