@@ -31,6 +31,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Lupa password: link di Login -> /lupa-password (POST /api/auth/forgot-password, respons generik, maks 3/jam), email tautan `FRONTEND_URL/reset-password?token=` (token sha256, 1 jam, sekali pakai) -> POST /api/auth/reset-password. Seed admin tidak lagi menimpa password yang sudah diubah.
 - Tombol "Kirim email uji" (POST /api/notifikasi/uji, 1x/menit) ke semua admin aktif
 - Ubah Password sendiri di header (POST /api/auth/change-password: password lama + baru)
+- Riwayat login: users.last_login_at/login_count + koleksi login_history; kolom "Login Terakhir" (Aktif ≤7 hr, Jarang ≤30 hr, Tidak aktif) di Data User + dialog 20 login terakhir (GET /api/users/{id}/login-history)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

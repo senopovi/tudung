@@ -91,9 +91,25 @@ function CUTab() {
     columns={[["kode", "Kode"], ["nama", "Nama"], ["manager", "Manager"], ["bagian_tudung", "Bagian Tudung"], ["telepon", "Telepon"], ["alamat", "Alamat"]]} />;
 }
 
+const fmtWaktu = (s) => new Date(s).toLocaleString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+const LastLogin = ({ r, onOpen }) => {
+  if (!r.last_login_at) return <button onClick={onOpen} className="text-xs text-muted-foreground hover:underline" data-testid={`last-login-${r.id}`}>Belum pernah login</button>;
+  const days = (Date.now() - new Date(r.last_login_at).getTime()) / 864e5;
+  const [label, cls] = days <= 7 ? ["Aktif", "bg-emerald-100 text-emerald-800"] : days <= 30 ? ["Jarang", "bg-amber-100 text-amber-800"] : ["Tidak aktif", "bg-stone-200 text-stone-700"];
+  return (
+    <button onClick={onOpen} className="flex flex-col items-start text-left hover:underline" data-testid={`last-login-${r.id}`}>
+      <span className="text-xs">{fmtWaktu(r.last_login_at)}</span>
+      <span className={`mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>{label}</span>
+    </button>
+  );
+};
+
 function UsersTab() {
   const { org } = useAuth();
   const [rows, setRows] = useState([]);
+  const [hist, setHist] = useState(null);
+  const openHist = async (u) => { const { data } = await api.get(`/users/${u.id}/login-history`); setHist({ u, data }); };
   const load = () => api.get("/users").then((r) => setRows(r.data));
   useEffect(() => { load(); }, []);
   const cuName = (id) => org.cus.find((c) => c.id === id)?.nama || "-";
@@ -111,9 +127,28 @@ function UsersTab() {
     if (k === "aktif") return <RG value={e.aktif === false ? "tidak" : "ya"} onChange={(v) => set({ ...e, aktif: v === "ya" })} testid="user-aktif" options={[["ya", "Aktif"], ["tidak", "Nonaktif"]]} />;
     return null;
   };
-  return <CrudTab title="Pengguna" testid="user" rows={rows} onSave={onSave} onDelete={onDelete} renderField={renderField}
+  return (
+    <>
+    <CrudTab title="Pengguna" testid="user" rows={rows} onSave={onSave} onDelete={onDelete} renderField={renderField}
     fields={[["name", "Nama"], ["email", "Email (Username)"], ["password", "Password (kosongkan bila tidak diubah)"], ["role", "Peran"], ["cu_id", "Credit Union"], ["aktif", "Status"]]}
-    columns={[["name", "Nama"], ["email", "Email"], ["role", "Peran", (r) => (r.role === "admin" ? "Admin Pusat" : "Petugas CU")], ["cu", "Credit Union", (r) => (r.role === "admin" ? "Semua" : cuName(r.cu_id))], ["aktif", "Status", (r) => (r.aktif === false ? "Nonaktif" : "Aktif")]]} />;
+    columns={[["name", "Nama"], ["email", "Email"], ["role", "Peran", (r) => (r.role === "admin" ? "Admin Pusat" : "Petugas CU")], ["cu", "Credit Union", (r) => (r.role === "admin" ? "Semua" : cuName(r.cu_id))], ["aktif", "Status", (r) => (r.aktif === false ? "Nonaktif" : "Aktif")], ["login", "Login Terakhir", (r) => <LastLogin r={r} onOpen={() => openHist(r)} />]]} />
+    <Dialog open={!!hist} onOpenChange={() => setHist(null)}>
+      <DialogContent className="max-w-lg" data-testid="login-history-dialog">
+        <DialogHeader><DialogTitle>Riwayat Login: {hist?.u.name}</DialogTitle></DialogHeader>
+        <p className="text-xs text-muted-foreground">Total login: {hist?.u.login_count || 0} kali • 20 login terakhir</p>
+        <div className="max-h-80 divide-y overflow-y-auto rounded-md border">
+          {hist?.data.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">Belum pernah login.</p>}
+          {hist?.data.map((h) => (
+            <div key={h.at} className="flex justify-between gap-3 px-3 py-2 text-sm">
+              <span className="font-medium">{fmtWaktu(h.at)}</span>
+              <span className="truncate text-xs text-muted-foreground">{h.ip}</span>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
 }
 
 export default function DataInduk() {

@@ -131,6 +131,10 @@ async def login(body: LoginIn, request: Request):
         await db.login_attempts.update_one({"identifier": ident}, {"$set": {"count": cnt, "until": until}}, upsert=True)
         raise HTTPException(401, "Email atau password salah")
     await db.login_attempts.delete_one({"identifier": ident})
+    at = now_iso()
+    await db.users.update_one({"id": user["id"]}, {"$set": {"last_login_at": at}, "$inc": {"login_count": 1}})
+    await db.login_history.insert_one({"user_id": user["id"], "at": at, "ip": request.client.host if request.client else "",
+                                       "agent": request.headers.get("user-agent", "")[:200]})
     user.pop("_id", None)
     user.pop("password_hash", None)
     return {"token": make_token(user["id"]), "user": user}
@@ -271,11 +275,17 @@ async def update_user(uid: str, body: UserIn, admin=Depends(admin_user)):
     return {"ok": True}
 
 
+@api.get("/users/{uid}/login-history")
+async def login_history(uid: str, _=Depends(admin_user)):
+    return await db.login_history.find({"user_id": uid}, {"_id": 0}).sort("at", -1).to_list(20)
+
+
 @api.delete("/users/{uid}")
 async def delete_user(uid: str, admin=Depends(admin_user)):
     if uid == admin["id"]:
         raise HTTPException(400, "Tidak bisa menghapus akun sendiri")
     await db.users.delete_one({"id": uid})
+    await db.login_history.delete_many({"user_id": uid})
     return {"ok": True}
 
 
@@ -966,6 +976,7 @@ app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.envi
 async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
+    await db.login_history.create_index([("user_id", 1), ("at", -1)])
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.password_reset_tokens.create_index("token_hash")
     await db.permohonan.create_index("id", unique=True)
