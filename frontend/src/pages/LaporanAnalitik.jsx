@@ -297,7 +297,7 @@ export function LapPerbandingan() {
   const tot = agg(f.mode === "cu" || !f.cu_id ? iuran : iuran.filter((r) => r.cu_id === f.cu_id), f.mode === "cu" || !f.cu_id ? cair : cair.filter((r) => r.cu_id === f.cu_id), {});
   const cols = [
     { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
-    { key: "label", label: f.mode === "cu" ? "Credit Union" : "Bulan" },
+    { key: "label", label: f.mode === "cu" ? "Credit Union" : "Bulan", render: (r) => (r.selisih < 0 ? <span data-testid={`defisit-${r.id}`}>{r.label} <b>(DEFISIT)</b></span> : r.label) },
     { key: "iuran", label: "Total Iuran Tudung", money: true, total: true },
     { key: "n", label: "Jml Anggota Cair", center: true, total: true },
     { key: "cair", label: "Total Pencairan Tudung", money: true, total: true },
@@ -314,7 +314,8 @@ export function LapPerbandingan() {
           <Field label="Tahun"><Input type="number" value={f.tahun} onChange={(e) => set("tahun")(Number(e.target.value))} data-testid="banding-tahun" /></Field>
         </div>
       }>
-      <ReportTable columns={cols} rows={rows} labelSpan={2} />
+      <ReportTable columns={cols} rows={rows} labelSpan={2} rowClass={(r) => (r.selisih < 0 ? "rpt-defisit" : "")} />
+      {rows.some((r) => r.selisih < 0) && <p className="mt-2 text-[9pt] text-red-700" data-testid="banding-defisit-note">Baris merah (DEFISIT): total pencairan melebihi total iuran pada tahun {f.tahun}.</p>}
       <p className="mt-2 text-right text-[9pt]" data-testid="banding-rasio-total">Rasio total pencairan terhadap iuran: <b>{rasio(tot)}</b></p>
     </ReportShell>
   );

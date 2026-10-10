@@ -59,6 +59,7 @@ body {
 .rpt-table td.num, .rpt-table th.num { text-align: right; white-space: nowrap; }
 .rpt-table td.ctr { text-align: center; }
 .rpt-table tfoot td { font-weight: 700; background: #f7f5ee; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rpt-table tr.rpt-defisit td { color: #b91c1c; background: #fef2f2; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
 @page { size: A4 portrait; margin: 10mm; }
 @media print {

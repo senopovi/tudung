@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp } from "lucide-react";
+import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/Common";
 import { CuSelect } from "@/components/Controls";
@@ -9,6 +9,25 @@ import { useAuth } from "@/context/AuthContext";
 import { api, rp, tgl, BULAN } from "@/lib/api";
 
 const bln = (k) => `${BULAN[Number(k.slice(5, 7)) - 1].slice(0, 3)} ${k.slice(2, 4)}`;
+
+const Defisit = ({ d }) =>
+  d.items.length ? (
+    <div className="mt-6 rounded-lg border border-red-300 bg-red-50 p-5" data-testid="dash-defisit">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-sm font-bold text-red-800"><AlertTriangle className="h-4 w-4" /> Peringatan: Pencairan melebihi Iuran (Tahun {d.tahun})</p>
+        <Link to="/laporan/perbandingan" className="text-xs font-semibold text-red-700 hover:underline" data-testid="dash-defisit-link">Lihat perbandingan</Link>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {d.items.map((c) => (
+          <div key={c.cu_id} className="rounded-md border border-red-200 bg-white px-4 py-3" data-testid={`dash-defisit-${c.cu_id}`}>
+            <p className="text-sm font-semibold text-red-800">{c.kode} — {c.nama}</p>
+            <p className="mt-1 text-xs text-stone-600">Iuran Rp {rp(c.iuran)} • Pencairan Rp {rp(c.cair)}</p>
+            <p className="font-mono text-sm font-bold text-red-700">Selisih Rp {rp(c.selisih)}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null;
 
 const Tren = ({ initial }) => {
   const { isAdmin } = useAuth();
@@ -105,6 +124,8 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <Defisit d={d.defisit} />
 
       <Tren initial={d.tren} />
 

@@ -69,7 +69,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
   );
 };
 
-export const ReportTable = ({ columns, rows, labelSpan = 3, empty = "Tidak ada data" }) => {
+export const ReportTable = ({ columns, rows, labelSpan = 3, empty = "Tidak ada data", rowClass }) => {
   const hasTotal = columns.some((c) => c.total);
   return (
     <table className="rpt-table" id="report-table" data-testid="report-table">
@@ -81,7 +81,7 @@ export const ReportTable = ({ columns, rows, labelSpan = 3, empty = "Tidak ada d
           <tr><td colSpan={columns.length} className="ctr">{empty}</td></tr>
         )}
         {rows.map((r, i) => (
-          <tr key={r.id || i}>
+          <tr key={r.id || i} className={rowClass?.(r) || ""}>
             {columns.map((c) => {
               const v = c.render ? c.render(r, i) : r[c.key];
               return <td key={c.key} className={c.money ? "num" : c.center ? "ctr" : ""}>{c.money ? new Intl.NumberFormat("id-ID").format(v || 0) : v}</td>;

@@ -762,7 +762,20 @@ async def dashboard(user=Depends(current_user)):
         r["cu_nama"] = cus.get(r["cu_id"], {}).get("nama", "-")
     return {"total": len(rows), "status": status, "hasil": hasil, "cair": {**cair, "total": cair["sanduk"] + cair["lalau"]},
             "per_cu": [{"nama": k, "total": v} for k, v in sorted(per_cu.items(), key=lambda x: -x[1])],
-            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent, "tren": await _tren(q)}
+            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent, "tren": await _tren(q), "defisit": await _defisit(q, cus)}
+
+
+async def _defisit(q, cus):
+    y = str(today().year)
+    cair, iuran = {}, {}
+    cq = {**q, "status": S_CAIR, "tanggal_cair": {"$gte": f"{y}-01-01", "$lte": f"{y}-12-31"}}
+    for r in await db.permohonan.find(cq, {"_id": 0, "cu_id": 1, "analisis.total_disetujui": 1}).to_list(50000):
+        cair[r["cu_id"]] = cair.get(r["cu_id"], 0) + (r.get("analisis") or {}).get("total_disetujui", 0)
+    for i in await db.iuran.find({**q, "tanggal": {"$gte": f"{y}-01-01", "$lte": f"{y}-12-31"}}, {"_id": 0, "cu_id": 1, "total": 1}).to_list(50000):
+        iuran[i["cu_id"]] = iuran.get(i["cu_id"], 0) + i.get("total", 0)
+    out = [{"cu_id": k, "nama": cus.get(k, {}).get("nama", "-"), "kode": cus.get(k, {}).get("kode", "-"), "cair": v, "iuran": iuran.get(k, 0),
+            "selisih": iuran.get(k, 0) - v} for k, v in cair.items() if v > iuran.get(k, 0)]
+    return {"tahun": int(y), "items": sorted(out, key=lambda x: x["selisih"])}
 
 
 async def _tren(q):

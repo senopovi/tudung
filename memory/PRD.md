@@ -26,6 +26,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - 6 laporan analitik (frontend `LaporanAnalitik.jsx`): Saldo Pencairan per periode, Penerima L/P per periode, Permohonan Tidak Disetujui + alasan, Tren iuran & pencairan (grafik), Anggota per usia meninggal/masuk, Rating CU
 - Dashboard: grafik tren Iuran Tudung & Saldo Pencairan 12 bulan terakhir (GET /api/dashboard -> tren), dengan filter CU untuk admin (GET /api/dashboard/tren?cu_id=)
 - Laporan Perbandingan Iuran vs Pencairan (ringkasan per CU / detail bulanan, selisih & rasio)
+- Peringatan defisit: baris merah "(DEFISIT)" di laporan perbandingan + kartu peringatan merah di Dashboard (CU dengan pencairan > iuran tahun berjalan)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi
