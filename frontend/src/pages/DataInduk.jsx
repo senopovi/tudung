@@ -11,6 +11,7 @@ import { PageHeader, Field } from "@/components/Common";
 import { CuSelect, RG, Confirm } from "@/components/Controls";
 import { useAuth } from "@/context/AuthContext";
 import { api, errMsg } from "@/lib/api";
+import { AnggotaImport } from "@/components/AnggotaImport";
 
 const CU_FIELDS = [["kode", "Kode Credit Union"], ["nama", "Nama Credit Union"], ["manager", "Nama Manager"], ["bagian_tudung", "Nama Bagian Tudung"], ["telepon", "Nomor Telepon"], ["alamat", "Alamat"]];
 
@@ -33,13 +34,13 @@ function PuskopditTab() {
   );
 }
 
-function CrudTab({ title, rows, columns, fields, onSave, onDelete, testid, renderField }) {
+function CrudTab({ title, rows, columns, fields, onSave, onDelete, testid, renderField, extra }) {
   const [edit, setEdit] = useState(null);
   const [del, setDel] = useState(null);
   const save = async () => { if (await onSave(edit)) setEdit(null); };
   return (
     <div className="space-y-4">
-      <div className="flex justify-end"><Button onClick={() => setEdit({})} className="bg-[#155e46] hover:bg-[#0d3b2e]" data-testid={`${testid}-add-btn`}><Plus className="mr-2 h-4 w-4" /> Tambah {title}</Button></div>
+      <div className="flex flex-wrap justify-end gap-2">{extra}<Button onClick={() => setEdit({})} className="bg-[#155e46] hover:bg-[#0d3b2e]" data-testid={`${testid}-add-btn`}><Plus className="mr-2 h-4 w-4" /> Tambah {title}</Button></div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
         <table className="data-table w-full" data-testid={`${testid}-table`}>
           <thead><tr>{columns.map(([, l]) => <th key={l} className="px-3 py-2.5 text-left">{l}</th>)}<th className="px-3 py-2.5" /></tr></thead>
@@ -130,7 +131,7 @@ function CUTab() {
     } catch (e) { toast.error(errMsg(e)); return false; }
   };
   const onDelete = async (d) => { try { await api.delete(`/cu/${d.id}`); await loadOrg(); toast.success("Credit Union dihapus"); } catch (e) { toast.error(errMsg(e)); } };
-  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={[...CU_FIELDS, ["jumlah_anggota", "Jumlah Anggota Terkini"], ["anggota_per_tahun", "Jumlah Anggota per Tahun (untuk per mil)"], ["hak_akses", "Hak Akses Petugas CU"]]} onSave={onSave} onDelete={onDelete} renderField={renderField}
+  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={[...CU_FIELDS, ["jumlah_anggota", "Jumlah Anggota Terkini"], ["anggota_per_tahun", "Jumlah Anggota per Tahun (untuk per mil)"], ["hak_akses", "Hak Akses Petugas CU"]]} onSave={onSave} onDelete={onDelete} renderField={renderField} extra={<AnggotaImport />}
     columns={[["kode", "Kode"], ["nama", "Nama"], ["manager", "Manager"], ["bagian_tudung", "Bagian Tudung"], ["telepon", "Telepon"], ["hak", "Hak Akses Petugas", (r) => `${Object.values(hakOf(r)).filter(Boolean).length}/${HAK.length}`], ["jumlah_anggota", "Jml Anggota", (r) => (r.jumlah_anggota ? new Intl.NumberFormat("id-ID").format(r.jumlah_anggota) : "-")]]} />;
 }
 

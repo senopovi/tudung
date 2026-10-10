@@ -428,6 +428,35 @@ async def update_cu(cid: str, body: CUIn, _=Depends(admin_user)):
     return {"ok": True}
 
 
+class AnggotaRow(BaseModel):
+    kode: str
+    tahun: int
+    jumlah: int
+
+
+class AnggotaImportIn(BaseModel):
+    rows: List[AnggotaRow]
+
+
+@api.post("/cu/anggota-import")
+async def import_anggota(body: AnggotaImportIn, _=Depends(admin_user)):
+    cus = {c["kode"].strip().upper(): c["id"] for c in await db.credit_unions.find({}, {"_id": 0, "kode": 1, "id": 1}).to_list(5000)}
+    updates, errors = {}, []
+    for i, r in enumerate(body.rows, 1):
+        cid = cus.get(r.kode.strip().upper())
+        if not cid:
+            errors.append(f"Baris {i}: Kode CU '{r.kode}' tidak ditemukan")
+        elif not 1900 <= r.tahun <= 2100 or r.jumlah < 0:
+            errors.append(f"Baris {i}: Tahun/jumlah tidak valid")
+        else:
+            updates.setdefault(cid, {})[f"anggota_per_tahun.{r.tahun}"] = r.jumlah
+    if errors:
+        raise HTTPException(400, "; ".join(errors[:10]))
+    for cid, s in updates.items():
+        await db.credit_unions.update_one({"id": cid}, {"$set": s})
+    return {"ok": True, "cu": len(updates), "baris": len(body.rows)}
+
+
 @api.delete("/cu/{cid}")
 async def delete_cu(cid: str, _=Depends(admin_user)):
     if await db.permohonan.find_one({"cu_id": cid}) or await db.iuran.find_one({"cu_id": cid}):
