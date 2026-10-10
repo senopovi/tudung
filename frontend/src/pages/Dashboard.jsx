@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp, AlertTriangle, Users } from "lucide-react";
+import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp, AlertTriangle, Users, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/Common";
 import { CuSelect } from "@/components/Controls";
@@ -29,6 +29,28 @@ const Defisit = ({ d }) =>
     </div>
   ) : null;
 
+const BelumIuran = ({ d }) => {
+  if (!d || !d.total_cu) return null;
+  const label = `${BULAN[Number(d.bulan.slice(5, 7)) - 1]} ${d.bulan.slice(0, 4)}`;
+  if (!d.items.length) return (
+    <div className="mt-6 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-800" data-testid="dash-belum-iuran-ok">
+      <CheckCircle2 className="h-4 w-4" /> Semua Credit Union sudah menyetor iuran {label}.
+    </div>
+  );
+  return (
+    <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-5" data-testid="dash-belum-iuran">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-sm font-bold text-amber-900"><CalendarClock className="h-4 w-4" /> Belum menyetor iuran {label} ({d.items.length} dari {d.total_cu} CU)</p>
+        <Link to="/iuran" className="text-xs font-semibold text-amber-800 hover:underline" data-testid="dash-belum-iuran-link">Input iuran</Link>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {d.items.map((c) => (
+          <span key={c.cu_id} className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-900" data-testid={`dash-belum-iuran-${c.cu_id}`}>{c.kode} — {c.nama}</span>
+        ))}
+      </div>
+    </div>
+  );
+};
 const Tren = ({ initial }) => {
   const { isAdmin } = useAuth();
   const [cu, setCu] = useState("");
@@ -133,6 +155,7 @@ export default function Dashboard() {
       </div>
 
       <Defisit d={d.defisit} />
+      <BelumIuran d={d.belum_iuran} />
 
       <div className="mt-6 flex flex-wrap items-center gap-6 rounded-lg border bg-white p-5 shadow-sm" data-testid="dash-permil">
         <div>

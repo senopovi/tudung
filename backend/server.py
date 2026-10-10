@@ -1149,7 +1149,15 @@ async def dashboard(user=Depends(current_user)):
         r["cu_nama"] = cus.get(r["cu_id"], {}).get("nama", "-")
     return {"total": len(rows), "status": status, "hasil": hasil, "cair": {**cair, "total": cair["sanduk"] + cair["lalau"]},
             "per_cu": [{"nama": k, "total": v} for k, v in sorted(per_cu.items(), key=lambda x: -x[1])],
-            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent, "tren": await _tren(q), "permil": await _permil(q, cus, today().year), "defisit": await _defisit(q, cus)}
+            "jumlah_cu": len(cus) if user["role"] == "admin" else 1, "recent": recent, "tren": await _tren(q), "permil": await _permil(q, cus, today().year), "defisit": await _defisit(q, cus), "belum_iuran": await _belum_iuran(cus) if user["role"] == "admin" else None}
+
+
+async def _belum_iuran(cus):
+    t = today()
+    m = f"{t.year}-{t.month:02d}"
+    sudah = set(await db.iuran.distinct("cu_id", {"tanggal": {"$gte": f"{m}-01", "$lte": f"{m}-31"}}))
+    items = sorted(({"cu_id": k, "kode": c.get("kode", "-"), "nama": c.get("nama", "-")} for k, c in cus.items() if k not in sudah), key=lambda x: x["kode"])
+    return {"bulan": m, "items": list(items), "total_cu": len(cus)}
 
 
 async def _defisit(q, cus):

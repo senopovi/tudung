@@ -51,6 +51,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Grafik Tren Iuran & Pencairan: bila semua bulan iuran=0 dan pencairan=0 tampil kotak "Belum ada data" (data-testid tren-chart-empty) menggantikan grafik; tabel tetap tampil
 - (2026-10-10) Grafik tren 12 bulan di Dashboard: kotak "Belum ada data" (dash-tren-empty) bila iuran & pencairan semua 0
 - (2026-10-10) Kartu per mil Dashboard: bila per mil kosong, Admin melihat tombol "Isi Jumlah Anggota" -> /data-induk?tab=cu (DataInduk membaca ?tab=puskopdit|cu|users); Petugas melihat teks "hubungi Admin Pusat untuk mengisi Jumlah Anggota"
+- (2026-10-10) Pengingat iuran di Dashboard Admin: /api/dashboard -> belum_iuran {bulan, items[{cu_id,kode,nama}], total_cu} (CU tanpa iuran bertanggal bulan berjalan, zona APP_TZ); kartu amber "Belum menyetor iuran <Bulan Tahun>" + link Input iuran; hijau bila semua sudah
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi
