@@ -46,6 +46,12 @@ const Tren = ({ initial }) => {
         <Link to="/laporan/tren" className="text-xs font-semibold text-amber-700 hover:underline" data-testid="dash-tren-link">Lihat laporan lengkap</Link>
       </div>
     </div>
+    {data.every((r) => !r.iuran && !r.cair) ? (
+      <div className="flex h-[260px] flex-col items-center justify-center rounded border border-dashed text-center" data-testid="dash-tren-empty">
+        <p className="text-sm font-semibold text-stone-600">Belum ada data</p>
+        <p className="mt-1 text-xs text-muted-foreground">Belum ada iuran atau pencairan dalam 12 bulan terakhir.</p>
+      </div>
+    ) : (
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={data} margin={{ left: 10, right: 10 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e3dc" />
@@ -57,6 +63,7 @@ const Tren = ({ initial }) => {
         <Line type="monotone" dataKey="cair" name="Saldo Pencairan" stroke="#155e46" strokeWidth={2.5} dot={{ r: 3 }} />
       </LineChart>
     </ResponsiveContainer>
+    )}
   </div>
   );
 };

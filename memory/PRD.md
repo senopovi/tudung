@@ -49,6 +49,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Tanda tangan per CU: koleksi cu_ttd {cu_id, ttd_/stempel_ manager/bagian}; GET/POST/DELETE /api/cu/{cid}/ttd[/{slot}] (admin semua CU, petugas hanya CU sendiri via check_cu); menu "Tanda Tangan CU" (/tanda-tangan-cu, grup Pengaturan, semua role). ReportShell prop cuId (atau cu_id petugas): laporan satu CU memakai nama Manager/Bagian Tudung + gambar CU (kota tetap dari PUSKOPDIT); laporan semua CU memakai PUSKOPDIT. cuId dipasang di Lap. Permohonan/Analisis/Pencairan, Iuran, Bantuan Cair, Saldo/Penerima periode, Tidak Disetujui, Tren, Usia
 - (2026-10-10) Baris CU di bawah judul laporan: bila tidak difilter dan user hanya punya 1 CU (Petugas CU), tampil "Credit Union: <nama CU>" bukan "Semua Credit Union" (usePeriodLine di Laporan.jsx, cuLine di LaporanAnalitik.jsx)
 - (2026-10-10) Grafik Tren Iuran & Pencairan: bila semua bulan iuran=0 dan pencairan=0 tampil kotak "Belum ada data" (data-testid tren-chart-empty) menggantikan grafik; tabel tetap tampil
+- (2026-10-10) Grafik tren 12 bulan di Dashboard: kotak "Belum ada data" (dash-tren-empty) bila iuran & pencairan semua 0
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi
