@@ -62,6 +62,10 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Halaman ke-3 Laporan Iuran: "REKAP TAHUNAN IURAN" (No, Bulan, Sanduk, Lalau, Biris Pangkaras, Sol. GPPK, Total Iuran + JUMLAH) dengan tanda tangan; ReportShell `extra` menerima array halaman; Excel sheet "Laporan 3" (#report-table-3)
 - (2026-10-10) Laporan admin "Rekap Iuran Semua CU" (/laporan/rekap-iuran, LapRekapIuranCU di LaporanIuran.jsx): satu baris per CU (Kode, Nama, Sanduk, Lalau, Biris, GPPK, Total) + JUMLAH, filter Tahun Buku (rentang Des tahun-1 s/d Des tahun, sama dengan Lap. Iuran)
 - (2026-10-10) Rekap Iuran Semua CU: pilihan Urutkan (Kode CU default / Total Iuran Terbesar, seri diurut kode) + keterangan urutan di bawah judul
+- (2026-10-10) Menu Transaksi "Permohonan Ditunda" & "Permohonan Tidak Disetujui" (/permohonan-ditunda, /permohonan-tidak-disetujui, PermohonanTertahan.jsx; GET /api/permohonan-tertahan?hasil=): Ubah (admin + petugas dgn ubah_hapus_permohonan, _petugas_edit mengizinkan hasil tertahan) & Analisis Ulang (admin)
+- (2026-10-10) CTT berkas lengkap & < 180 hari -> "Ditunda" (bukan Tidak Disetujui), analisis.tunda_ctt + tgl_ctt_180; cron harian reanalisis_ctt otomatis menganalisis ulang saat genap 180 hari (analis "sistem (otomatis 180 hari)")
+- (2026-10-10) Surat Daftar Bantuan Cair: snapshot pencairan.sebagian (narasi Disetujui Sebagian, no = urutan tabel by nama) + pencairan.tertahan (Ditunda/Tidak Disetujui CU yang sama, hanya sekali via permohonan.lapor_pencairan_id; di-unset saat batal pencairan / analisis ulang) + kalimat penutup (PencairanNarasi.jsx). Format "N. Tudung a.n.: NAMA dengan BA. BA: HASIL karena ALASAN." (alasan_text di calc.py)
+- (2026-10-10) Tanda tangan: Admin Pusat mencetak -> selalu PUSKOPDIT; tanda tangan CU hanya saat Petugas CU mencetak
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

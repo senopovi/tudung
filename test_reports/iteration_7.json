@@ -1,0 +1,35 @@
+{
+  "summary": "E2E tested iteration 7 (Permohonan Tertahan + CTT Ditunda + Pencairan narasi + Admin/Petugas signatures). Backend: 12 pytest tests (/app/backend/tests/test_tertahan_ctt_pencairan.py) — ALL PASSED in ~16s. Covered (1) CTT jenis='cacat' + lengkap + <180 hari → hasil 'Ditunda', tunda_ctt=true, tgl_ctt_180 = tanggal_terima+180. (2) berkas_lengkap=false + keputusan='Tidak Disetujui' → 'Tidak Disetujui'. (3) cacat_override=true + alasan → normal Disetujui/Sebagian. (4) GET /api/permohonan-tertahan?hasil=Ditunda / Tidak%20Disetujui return rows with hasil, alasan, tunda_ctt, tgl_ctt_180, lapor_pencairan_id, cu_nama. (5) invalid hasil → 400. (6) petugas w/o ubah_hapus_permohonan → 403; petugas with perm sees only own CU rows. (7) petugas PUT /permohonan/{pid} on Ditunda/Tidak Disetujui row succeeds and status becomes Antrian Analisis + analisis removed; cannot edit Disetujui (403). (8) reanalisis_ctt: setting tgl_ctt_180=yesterday + tanggal_terima=today-181 → calling server.reanalisis_ctt() flips hasil to Disetujui Sebagian, analis='sistem (otomatis 180 hari)', tunda_ctt=false. (9) POST /pencairan with a Disetujui-Sebagian row and same-CU Ditunda row produces doc.sebagian=[{no:1,nama,ba,hasil,alasan}], doc.tertahan with the Ditunda item (containing id, nama, ba, jenis_kelamin, jenis_kejadian, sanduk, lalau, hasil, alasan). Those tertahan permohonan get lapor_pencairan_id. Second pencairan for same CU does NOT include them. DELETE /pencairan unsets lapor_pencairan_id. Frontend (Playwright, admin + 1 petugas): Admin sidebar renders Permohonan Ditunda + Permohonan Tidak Disetujui under Transaksi; both pages render data-testid tertahan-page-ditunda/tidak-disetujui and tertahan-{slug}-table; row data-testid tertahan-row-{id}, tertahan-edit-{id}, tertahan-reanalisis-{id} (admin only), tertahan-ctt-{id}. /bantuan-cair as admin: report-paper contains pencairan-report-table, pencairan-narasi { narasi-sebagian, tertahan-report-table, narasi-tertahan }, pencairan-penutup, and report-signatures. Narasi text matches spec exactly: '1. Tudung a.n.: TEST_FE_SEB dengan BA. TESTFE1: Disetujui Sebagian karena Maksimal Sanduk disetujui Rp 50.000.000; kelebihan Rp 50.000.000 Tidak Disetujui.' and '1. Tudung a.n.: TEST_FE_DIT dengan BA. TESTFE2: Ditunda karena Cacat Total Tetap baru mengendap 10 dari 180 hari sejak terima berkas: Ditunda sampai 29-03-2027.' Penutup: 'Demikian surat ini disampaikan, atas perhatian dan kerjasama diucapkan terima kasih.' Admin signature uses org.puskopdit (Pontianak + placeholder '(.............................)' since demo PUSKOPDIT manager/bagian_tudung are null — expected). Petugas (CUG-001) logged in: signature on both /bantuan-cair and /laporan/pencairan uses CU manager '[Manager CU 01]' and Bagian Tudung '[Bagian Tudung CU 01]' with Pontianak date — spec correct. Petugas sidebar shows ditunda/tidak-disetujui/bantuan-cair/laporan-pencairan; nav-analisis and nav-pencairan hidden (admin-only). /permohonan-ditunda for petugas lists only own CU row, shows edit button + CTT label 'Otomatis dianalisis ulang 29/03/2027' + 'Sudah dimuat di surat pencairan', no analisis-ulang button (admin-only). All TEST_ data cleaned up (pencairan, permohonan, petugas user).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_tertahan_ctt_pencairan.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/tertahan_ctt_pencairan.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "calc.py:93-98 — Ditunda-CTT uses `hari_mengendap < s['hari_cacat']` (strict <) so on day 180 analyze returns normal result. Matches spec ('< 180 days' => Ditunda). reanalisis_ctt query uses `tgl_ctt_180 <= today` so day-of switch is consistent. OK.",
+    "calc.py:198 — `tunda_ctt` only set true when analyze returned Ditunda AND lengkap AND not tolak. Good; prevents false positives for not-lengkap or berkas-overdue.",
+    "server.py:783 _petugas_edit allows petugas (ubah_hapus_permohonan) to edit when status==Sudah Dianalisis AND hasil in (Ditunda, Tidak Disetujui). Resets to S_ANTRIAN and $unsets analisis. Correct and symmetrical with front-end tertahan page.",
+    "server.py:794 /permohonan-tertahan returns alasan via alasan_text(a); strips 'sesuai Saldo Permohonan' notes and joins with '; '. Nice.",
+    "server.py:907 _save_analisis `$unset: lapor_pencairan_id` on save ensures re-analysis clears the stale linkage to a prior pencairan. Correct.",
+    "server.py:911 reanalisis_ctt rebuilds AnalisisIn by filtering `AnalisisIn.model_fields` from existing analisis — relies on fields matching. Works because PermissionIn fields are also stored on analisis via _save_analisis. However it excludes keys ending with 'temp_id' only, but 'has_lalau_file'/'has_cacat_file' aren't model fields so OK. Minor: if a stored field value becomes None after a prior save (e.g. keputusan_berkas), it's skipped and the AnalisisIn default takes over — acceptable.",
+    "server.py:977-993 cairkan: tertahan snapshot stored on pencairan doc (not computed later) — matches spec 'reported only once'. lapor_pencairan_id stamping and batal_pencairan $unset are symmetrical.",
+    "Report.jsx:60-66 ReportShell `sigCu = isAdmin ? '' : cuId || user?.cu_id` → admin always uses PUSKOPDIT, petugas uses CU TTD. Spec: when Admin Pusat prints ANY report, signature uses PUSKOPDIT; when Petugas prints, use CU. Correct.",
+    "PencairanNarasi.jsx uses pencairan.sebagian/tertahan arrays shipped from backend — stable snapshot even after permohonan changes. Good.",
+    "Minor: demo-seed PUSKOPDIT has manager/bagian_tudung=null → signature falls back to placeholder '(.............................)'. Not a bug (seed data), but main agent may want to seed sample Manager/Bagian names to show more polished default admin print.",
+    "Layout.jsx:17-18 new nav items use perm='ubah_hapus_permohonan' — matches backend 403 enforcement."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tertahan_ctt_pencairan.py",
+    "/app/backend/tests/conftest.py"
+  ],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% (all assertions)"},
+  "test_credentials": "admin: senopovi@gmail.com / TudungAdmin#2026",
+  "seed_data_creation": "All seed data (TEST_ permohonan, TEST_ petugas, TEST9... pencairan) was created and fully deleted during tests. Final verification: GET /api/permohonan?q=TEST_ returns 0 rows. Demo CUs (CUG-001..006), PUSKOPDIT, and settings untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Regression suite: /app/backend/tests/test_tertahan_ctt_pencairan.py (self-cleaning). /app/backend/tests/conftest.py loads REACT_APP_BACKEND_URL from /app/frontend/.env automatically — reuse this pattern. Demo PUSKOPDIT has no manager/bagian_tudung names, so admin signatures show placeholders; this is intentional / not a bug.",
+  "rca of the issue": "N/A — no issues found."
+}
