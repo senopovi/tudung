@@ -268,6 +268,13 @@ async def read_settings(_=Depends(current_user)):
 @api.put("/settings")
 async def write_settings(body: dict, _=Depends(admin_user)):
     data = {k: v for k, v in body.items() if k in DEFAULT_SETTINGS}
+    try:
+        return await _write_settings(data)
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(400, "Nilai pengaturan tidak valid")
+
+
+async def _write_settings(data):
     if "sanduk_brackets" in data:
         data["sanduk_brackets"] = sorted(
             [{"sampai": float(b["sampai"]), "max": int(b["max"])} for b in data["sanduk_brackets"]], key=lambda b: b["sampai"])

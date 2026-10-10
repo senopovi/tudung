@@ -1,0 +1,44 @@
+{
+  "summary": "Comprehensive backend regression tests (26 pytest cases) covering auth, CU/Puskopdit/Users CRUD, settings, PDF upload, permohonan+analisis+pencairan happy flow, iuran rapel, dashboard, and petugas role scoping. Also smoke-tested the React frontend (login, dashboard, Pengaturan, Data Induk, Permohonan form) via Playwright. All 26 backend tests pass against the preview URL. Frontend renders cleanly, money inputs auto-format with dots (e.g. 500.000.000), total auto-calculates, nav data-testids present, Pengaturan editable with brackets, kop upload, settings-save-btn. Admin login works, wrong password returns 401 and triggers 5x rate limit (429) per /app/auth_testing.md. Hash is bcrypt ($2b$), startup seed updates admin password if changed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/pencairan", "issue": "No DELETE endpoint - once a permohonan is cairkan'd it cannot be removed by DELETE /api/permohonan/{id} (400). Makes cleanup of accidental pencairan impossible via API; requires DB access. Consider adding an admin-only cancel/void endpoint."},
+      {"endpoint": "CORS", "issue": "CORS_ORIGINS='*' combined with allow_credentials=True in server.py line 707 – Starlette will silently drop Access-Control-Allow-Credentials when origin is wildcard. Not a bug today (no cookies used; JWT in Authorization header) but misleading config."},
+      {"endpoint": "/api/settings", "issue": "write_settings casts all non-bracket keys to int unconditionally; a payload omitting any key is fine, but passing a non-numeric value yields 500 (ValueError) instead of 400. Low priority."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Sidebar / Layout", "issues": ["Group label 'Data Induk' (p tag) duplicates text with the nav link below – harmless but caused Playwright strict-mode conflict. Consider using get_by_role('link'). Not a user-facing issue."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_tudung_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Consider adding a cancel/void pencairan endpoint (optional).",
+    "Tighten CORS_ORIGINS to explicit preview origin instead of '*' with credentials (optional)."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 731 lines – approaching the 700-line threshold; consider splitting routers (auth/users/cu/permohonan/analisis/pencairan/iuran) into separate modules.",
+    "FastAPI startup/shutdown uses deprecated @app.on_event; migrate to lifespan context (non-blocking).",
+    "/api/settings write path: int() coercion can raise ValueError => 500. Wrap with try/except -> HTTPException(400).",
+    "analyze() in calc.py: when u_ang.desimal <= smallest bracket.sampai it works, but if a bracket list is empty cap stays 0 silently => sanduk disetujui = 0. Validate at settings PUT that brackets non-empty.",
+    "/api/pencairan returns raw doc that already excludes _id via doc.pop; fine. But sum() over missing keys would KeyError – protected by earlier validation (hasil check + total_disetujui).",
+    "login_attempts collection is never pruned; add TTL index on 'until' or cleanup on startup."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_tudung_api.py (new)"
+  ],
+  "success_rate": {"backend": "100% (26/26)", "frontend": "100% smoke (login, nav, forms, money format, pengaturan all OK)"},
+  "test_credentials": "admin: senopovi@gmail.com / TudungAdmin#2026 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "All TEST_-prefixed data was created and cleaned up afterwards. Also wiped residual pencairan/files/temp_files and reset settings.nomor_berikutnya=1 so main agent gets a clean DB (0 CU, 0 permohonan, 1 admin user).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file at /app/backend/tests/test_tudung_api.py. Run with: cd /app && pytest backend/tests/test_tudung_api.py -v -n 0 --junitxml=/app/test_reports/pytest/pytest_results.xml  (Important: use -n 0 to override xdist=2 in pytest.ini – session fixtures create unique CU codes and would collide across workers.). The suite expects server date Asia/Jakarta = 2026-10-10. If 'today' moves, update TODAY constant. All data is TEST_-prefixed; teardown is best-effort (pencairan has no DELETE so leftover 1/T/PUSAKA/X/2026 may need Mongo cleanup).",
+  "rca of the issue": "N/A - no blocking issues found."
+}
