@@ -376,6 +376,7 @@ class CUIn(BaseModel):
     telepon: str = ""
     hak_akses: dict = {}
     jumlah_anggota: int = 0
+    anggota_per_tahun: dict = {}
 
 
 HAK_DEFAULT = {"input_iuran": True, "ubah_hapus_permohonan": True, "lihat_hasil_analisis": True, "lihat_laporan_permohonan": True, "lihat_laporan": True}
@@ -385,6 +386,10 @@ BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agu
 def _cu_doc(body: CUIn):
     d = body.model_dump()
     d["hak_akses"] = {k: bool(body.hak_akses.get(k, v)) for k, v in HAK_DEFAULT.items()}
+    try:
+        d["anggota_per_tahun"] = {str(int(k)): int(v) for k, v in body.anggota_per_tahun.items() if str(v).strip() != ""}
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Jumlah anggota per tahun tidak valid")
     return d
 
 
@@ -819,8 +824,18 @@ async def _permil(q, cus, tahun):
     pq = {**q, "tgl_kejadian": {"$gte": f"{tahun}-01-01", "$lte": f"{tahun}-12-31"}}
     m = await db.permohonan.count_documents(pq)
     ids = [q["cu_id"]] if q.get("cu_id") else list(cus)
-    anggota = sum(int(cus.get(i, {}).get("jumlah_anggota") or 0) for i in ids)
-    return {"tahun": tahun, "meninggal": m, "anggota": anggota, "permil": round(m / anggota * 1000, 2) if anggota else None}
+    anggota, fallback, m_valid = 0, False, 0
+    for i in ids:
+        c = cus.get(i, {})
+        n = (c.get("anggota_per_tahun") or {}).get(str(tahun))
+        if n is None:
+            n = int(c.get("jumlah_anggota") or 0)
+            fallback = fallback or n > 0
+        if int(n) > 0:
+            anggota += int(n)
+            m_valid += m if q.get("cu_id") else await db.permohonan.count_documents({**pq, "cu_id": i})
+    return {"tahun": tahun, "meninggal": m, "meninggal_terhitung": m_valid, "anggota": anggota, "sumber": "terkini" if fallback else "tahun",
+            "permil": round(m_valid / anggota * 1000, 2) if anggota else None}
 
 
 @api.get("/laporan/permil")

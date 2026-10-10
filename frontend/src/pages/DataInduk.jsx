@@ -91,9 +91,32 @@ const HakBoxes = ({ e, set, note, testid }) => (
   </div>
 );
 
+const AnggotaTahun = ({ e, set }) => {
+  const apt = e.anggota_per_tahun || {};
+  const [baru, setBaru] = useState(String(new Date().getFullYear()));
+  const upd = (n) => set({ ...e, anggota_per_tahun: n });
+  return (
+    <div className="space-y-2 rounded-md border bg-stone-50 p-3" data-testid="cu-anggota-tahun">
+      {Object.keys(apt).sort().reverse().map((y) => (
+        <div key={y} className="flex items-center gap-2">
+          <span className="w-14 font-mono text-sm font-semibold">{y}</span>
+          <Input type="number" min={0} value={apt[y]} onChange={(ev) => upd({ ...apt, [y]: Number(ev.target.value) })} className="h-8" data-testid={`apt-${y}`} />
+          <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => { const n = { ...apt }; delete n[y]; upd(n); }} data-testid={`apt-remove-${y}`}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+        </div>
+      ))}
+      <div className="flex items-center gap-2">
+        <Input type="number" value={baru} onChange={(ev) => setBaru(ev.target.value)} className="h-8 w-24" placeholder="Tahun" data-testid="apt-new-tahun" />
+        <Button type="button" size="sm" variant="outline" disabled={!/^\d{4}$/.test(baru) || baru in apt} onClick={() => upd({ ...apt, [baru]: Number(e.jumlah_anggota) || 0 })} data-testid="apt-add-btn"><Plus className="mr-1 h-3.5 w-3.5" /> Tambah Tahun</Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">Tahun yang belum diisi memakai Jumlah Anggota Terkini.</p>
+    </div>
+  );
+};
+
 function CUTab() {
   const { org, loadOrg } = useAuth();
   const renderField = (k, e, set) => {
+    if (k === "anggota_per_tahun") return <AnggotaTahun e={e} set={set} />;
     if (k === "jumlah_anggota") return <Input type="number" min={0} value={e.jumlah_anggota || ""} onChange={(ev) => set({ ...e, jumlah_anggota: Number(ev.target.value) })} data-testid="cu-field-jumlah_anggota" />;
     if (k !== "hak_akses") return null;
     return <HakBoxes e={e} set={set} testid="hak" note="Selalu diizinkan: input permohonan & Dashboard CU sendiri. Analisis & pencairan hanya Admin Pusat. Hak per petugas bisa dibatasi lagi di Data User." />;
@@ -101,13 +124,13 @@ function CUTab() {
   const onSave = async (d) => {
     if (!d.kode || !d.nama) { toast.error("Kode dan Nama wajib diisi"); return false; }
     try {
-      const body = { ...Object.fromEntries(CU_FIELDS.map(([k]) => [k, d[k] || ""])), hak_akses: hakOf(d), jumlah_anggota: Number(d.jumlah_anggota) || 0 };
+      const body = { ...Object.fromEntries(CU_FIELDS.map(([k]) => [k, d[k] || ""])), hak_akses: hakOf(d), anggota_per_tahun: d.anggota_per_tahun || {}, jumlah_anggota: Number(d.jumlah_anggota) || 0 };
       d.id ? await api.put(`/cu/${d.id}`, body) : await api.post("/cu", body);
       await loadOrg(); toast.success("Credit Union disimpan"); return true;
     } catch (e) { toast.error(errMsg(e)); return false; }
   };
   const onDelete = async (d) => { try { await api.delete(`/cu/${d.id}`); await loadOrg(); toast.success("Credit Union dihapus"); } catch (e) { toast.error(errMsg(e)); } };
-  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={[...CU_FIELDS, ["jumlah_anggota", "Jumlah Anggota (untuk per mil)"], ["hak_akses", "Hak Akses Petugas CU"]]} onSave={onSave} onDelete={onDelete} renderField={renderField}
+  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={[...CU_FIELDS, ["jumlah_anggota", "Jumlah Anggota Terkini"], ["anggota_per_tahun", "Jumlah Anggota per Tahun (untuk per mil)"], ["hak_akses", "Hak Akses Petugas CU"]]} onSave={onSave} onDelete={onDelete} renderField={renderField}
     columns={[["kode", "Kode"], ["nama", "Nama"], ["manager", "Manager"], ["bagian_tudung", "Bagian Tudung"], ["telepon", "Telepon"], ["hak", "Hak Akses Petugas", (r) => `${Object.values(hakOf(r)).filter(Boolean).length}/${HAK.length}`], ["jumlah_anggota", "Jml Anggota", (r) => (r.jumlah_anggota ? new Intl.NumberFormat("id-ID").format(r.jumlah_anggota) : "-")]]} />;
 }
 

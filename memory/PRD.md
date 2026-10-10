@@ -36,7 +36,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Hak akses per CU (credit_unions.hak_akses: input_iuran, ubah_hapus_permohonan, lihat_hasil_analisis, lihat_laporan_permohonan; default semua ON) diatur admin di Data CU; enforced backend (can/require_perm) + menu/route frontend. Petugas selalu: input permohonan, lihat laporan pencairan/bantuan cair/saldo & penerima periode/tren/iuran CU sendiri. Admin only: analisis, pencairan, rekap/rating/perbandingan/usia/data CU, data induk, pengaturan
 - Pengingat email 7 hari sebelum nonaktif otomatis; cron harian 08:00 WIB `.emergent/crons.yml` -> POST /api/cron/akun (Bearer WEBHOOK_CRON_SECRET, idempotent)
 - Hak akses per user (users.hak_akses, efektif = hak CU AND hak user) + hak baru `lihat_laporan` (menu Laporan & Bantuan Cair; GET /api/pencairan & /api/laporan/permil)
-- Angka kematian/CTT per mil: credit_unions.jumlah_anggota; laporan /laporan/permil (GET /api/laporan/permil?tahun=) + kartu Dashboard
+- Angka kematian/CTT per mil: credit_unions.jumlah_anggota (terkini) + anggota_per_tahun {"2025": n}; per mil memakai jumlah tahun tsb, fallback ke terkini (ditandai *); CU tanpa jumlah anggota tidak dihitung; laporan /laporan/permil (GET /api/laporan/permil?tahun=) + kartu Dashboard
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

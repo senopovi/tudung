@@ -327,7 +327,7 @@ const fmtPermil = (v) => (v === null || v === undefined ? "-" : `${String(v).rep
 export function LapPerMil() {
   const [tahun, setTahun] = useState(thisYear);
   const rows = useData("/laporan/permil", { tahun });
-  const tot = rows.reduce((a, r) => ({ m: a.m + r.meninggal, n: a.n + r.anggota }), { m: 0, n: 0 });
+  const tot = rows.reduce((a, r) => ({ m: a.m + (r.anggota ? r.meninggal : 0), n: a.n + r.anggota }), { m: 0, n: 0 });
   const cols = [
     { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
     { key: "kode", label: "Kode", center: true },
@@ -336,13 +336,14 @@ export function LapPerMil() {
     { key: "l", label: "L", center: true, total: true },
     { key: "p", label: "P", center: true, total: true },
     { key: "meninggal", label: "Meninggal/CTT", center: true, total: true },
-    { key: "permil", label: "Per Mil (\u2030)", center: true, render: (r) => fmtPermil(r.permil) },
+    { key: "permil", label: "Per Mil (\u2030)", center: true, render: (r) => fmtPermil(r.permil) + (r.sumber === "terkini" ? " *" : "") },
   ];
   return (
     <ReportShell title="Laporan Angka Kematian/CTT Anggota per Mil" lines={[`Tahun ${tahun}`, "Per mil = jumlah meninggal/CTT \u00f7 jumlah anggota \u00d7 1.000"]} fileName={`Per_Mil_${tahun}`}
       filters={<div className="max-w-xs"><Field label="Tahun Kejadian"><Input type="number" value={tahun} onChange={(e) => setTahun(Number(e.target.value))} data-testid="permil-tahun" /></Field></div>}>
       <ReportTable columns={cols} rows={rows} labelSpan={3} />
-      <p className="mt-2 text-right text-[9pt]" data-testid="permil-total">Per mil keseluruhan: <b>{fmtPermil(tot.n ? Math.round((tot.m / tot.n) * 100000) / 100 : null)}</b></p>
+      <p className="mt-2 text-right text-[9pt]" data-testid="permil-total">Per mil keseluruhan (hanya CU yang jumlah anggotanya terisi): <b>{fmtPermil(tot.n ? Math.round((tot.m / tot.n) * 100000) / 100 : null)}</b></p>
+      {rows.some((r) => r.sumber === "terkini") && <p className="mt-1 text-[8pt]" data-testid="permil-terkini-note">* Jumlah anggota tahun {tahun} belum dicatat; memakai Jumlah Anggota Terkini.</p>}
       {rows.some((r) => !r.anggota) && <p className="no-print mt-1 text-xs text-amber-700">CU dengan per mil "-" belum diisi Jumlah Anggota di Data Induk &rarr; Data Credit Union.</p>}
     </ReportShell>
   );
