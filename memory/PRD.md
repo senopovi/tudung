@@ -56,6 +56,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Ringkasan pengingat iuran ke semua Admin Pusat aktif setiap kali pengingat terkirim/gagal (tabel CU, penerima, status termasuk "Tidak ada petugas aktif"); notif_log jenis "ringkasan_iuran"
 - (2026-10-10) Laporan Saldo Pencairan per Periode digabung dengan Penerima L/P: header 2 baris (PENCAIRAN TUDUNG: Sanduk/Lalau/Jumlah; JENIS KELAMIN: Laki-laki/Perempuan; JUMLAH penerima). Menu & laporan "Penerima L/P per Periode" dihapus (URL lama diarahkan ke Dashboard)
 - (2026-10-10) Grafik batang Laki-laki/Perempuan per periode di atas tabel Saldo Pencairan per Periode (recharts BarChart, ikut tercetak); "Belum ada data" bila tidak ada penerima
+- (2026-10-10) Persentase Laki-laki/Perempuan (1 desimal, format id-ID) di bawah angka pada baris JUMLAH tabel Saldo Pencairan per Periode; disembunyikan bila total penerima 0
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

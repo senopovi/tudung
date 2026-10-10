@@ -72,6 +72,7 @@ export function LapSaldoPeriode() {
   const [f, set] = useF({ cu_id: "", tipe: "bulan", tahun: thisYear });
   const rows = usePeriodRows(f);
   const sum = (k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  const pct = (a, b) => `${(Math.round((a / b) * 1000) / 10).toLocaleString("id-ID")}%`;
   return (
     <ReportShell cuId={f.cu_id} title="Laporan Saldo Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Saldo_Pencairan_${f.tipe}_${f.tahun}`}
       filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
@@ -118,7 +119,9 @@ export function LapSaldoPeriode() {
           <tr data-testid="saldo-periode-total-row">
             <td colSpan={2} className="ctr">JUMLAH</td>
             <td className="num">{rp(sum("sanduk"))}</td><td className="num">{rp(sum("lalau"))}</td><td className="num">{rp(sum("total"))}</td>
-            <td className="ctr">{sum("l")}</td><td className="ctr">{sum("p")}</td><td className="ctr">{sum("n")}</td>
+            <td className="ctr" data-testid="saldo-periode-total-l">{sum("l")}{sum("n") > 0 && <span className="block text-[7.5pt] font-semibold">({pct(sum("l"), sum("n"))})</span>}</td>
+            <td className="ctr" data-testid="saldo-periode-total-p">{sum("p")}{sum("n") > 0 && <span className="block text-[7.5pt] font-semibold">({pct(sum("p"), sum("n"))})</span>}</td>
+            <td className="ctr">{sum("n")}</td>
           </tr>
         </tfoot>
       </table>
