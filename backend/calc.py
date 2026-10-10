@@ -1,5 +1,5 @@
 import calendar
-from datetime import date
+from datetime import date, timedelta
 
 DEFAULT_SETTINGS = {
     "max_hari_berkas": 100,
@@ -89,12 +89,12 @@ def analyze(p, inp, s, today):
             tolak = True
             umum.append(f"Lama terima berkas {lama_berkas} hari melebihi batas {s['max_hari_berkas']} hari: Pencairan Tudung Tidak Disetujui.")
 
+    tunda_ctt, tgl_ctt = False, (tt + timedelta(days=int(s["hari_cacat"]))).isoformat()
     if p.get("jenis_kejadian") == "cacat" and hari_mengendap < s["hari_cacat"]:
         if inp.get("cacat_override") and _has(inp, "cacat_alasan", "has_cacat_file"):
             umum.append(f"Cacat Total Tetap baru mengendap {hari_mengendap} hari, disetujui lebih cepat berdasarkan alasan/berkas keputusan.")
         else:
-            tolak = True
-            umum.append(f"Cacat Total Tetap baru mengendap {hari_mengendap} dari {s['hari_cacat']} hari sejak terima berkas: Tidak Disetujui.")
+            tunda_ctt = True
 
     sanduk = 0
     if sanduk_aju > 0:
@@ -162,6 +162,10 @@ def analyze(p, inp, s, today):
         umum.append(f"Berkas tidak lengkap: Data Permohonan {hasil}.")
         if hasil == "Tidak Disetujui":
             sanduk = lalau = 0
+    elif tunda_ctt:
+        hasil = "Ditunda"
+        d = to_date(tgl_ctt)
+        umum.append(f"Cacat Total Tetap baru mengendap {hari_mengendap} dari {s['hari_cacat']} hari sejak terima berkas: Ditunda sampai {d.day:02d}-{d.month:02d}-{d.year}.")
     else:
         total = sanduk + lalau
         if total > 0 and total >= sanduk_aju + lalau_aju:
@@ -191,4 +195,12 @@ def analyze(p, inp, s, today):
         "catatan_sanduk": cs,
         "catatan_lalau": cl,
         "hasil": hasil,
+        "tunda_ctt": hasil == "Ditunda" and tunda_ctt and lengkap and not tolak,
+        "tgl_ctt_180": tgl_ctt,
     }
+
+
+def alasan_text(a):
+    notes = [n.strip().rstrip(".") for n in (a.get("catatan_umum") or []) + (a.get("catatan_sanduk") or []) + (a.get("catatan_lalau") or [])
+             if "sesuai Saldo Permohonan" not in n]
+    return "; ".join(notes) or (a.get("catatan") or "-").strip()

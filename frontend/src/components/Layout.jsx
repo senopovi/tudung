@@ -14,6 +14,8 @@ const NAV = [
       { to: "/permohonan", label: "Daftar Permohonan", icon: FileStack, end: true },
       { to: "/permohonan/tambah", label: "Tambah Permohonan", icon: FilePlus2 },
       { to: "/analisis", label: "Analisis Permohonan", icon: ScanSearch, admin: true },
+      { to: "/permohonan-ditunda", label: "Permohonan Ditunda", icon: FileStack, perm: "ubah_hapus_permohonan" },
+      { to: "/permohonan-tidak-disetujui", label: "Permohonan Tidak Disetujui", icon: FileStack, perm: "ubah_hapus_permohonan" },
       { to: "/pencairan", label: "Pencairan Tudung", icon: HandCoins, admin: true },
       { to: "/bantuan-cair", label: "Daftar Bantuan Cair", icon: ReceiptText },
       { to: "/iuran", label: "Iuran Credit Union", icon: Wallet },

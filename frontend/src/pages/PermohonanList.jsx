@@ -13,7 +13,7 @@ const STATUS = [["Antrian Analisis", "Antrian Analisis"], ["Sudah Dianalisis", "
 
 export default function PermohonanList() {
   const { isAdmin, can } = useAuth();
-  const editable = (r) => r.status !== "Dicairkan" && (isAdmin || (can("ubah_hapus_permohonan") && r.status === "Antrian Analisis"));
+  const editable = (r) => r.status !== "Dicairkan" && (isAdmin || (can("ubah_hapus_permohonan") && (r.status === "Antrian Analisis" || ["Ditunda", "Tidak Disetujui"].includes(r.analisis?.hasil))));
   const nav = useNavigate();
   const [rows, setRows] = useState([]);
   const [f, setF] = useState({ q: "", cu_id: "", status: "", terima_dari: "", terima_sampai: "", cair_dari: "", cair_sampai: "" });

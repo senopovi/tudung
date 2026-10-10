@@ -58,7 +58,7 @@ const KERTAS = { A4: [210, 297], F4: [215, 330] };
 
 export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true, cuId, extra }) => {
   const { org, user, isAdmin } = useAuth();
-  const sigCu = cuId || (!isAdmin ? user?.cu_id : "");
+  const sigCu = isAdmin ? "" : cuId || user?.cu_id;
   const [cuTtd, setCuTtd] = useState({});
   useEffect(() => { setCuTtd({}); if (sigCu) api.get(`/cu/${sigCu}/ttd`).then((r) => setCuTtd(r.data)).catch(() => {}); }, [sigCu]);
   const cuRow = sigCu && org.cus.find((c) => c.id === sigCu);

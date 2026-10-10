@@ -22,7 +22,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
-from calc import analyze, DEFAULT_SETTINGS, format_nomor, rp
+from calc import analyze, alasan_text, DEFAULT_SETTINGS, format_nomor, rp
 from email_service import send_email, EMAIL_FROM_NAME
 from html import escape
 
@@ -294,6 +294,10 @@ async def cron_akun(request: Request, background: BackgroundTasks):
 
 async def cron_harian():
     await auto_deactivate()
+    try:
+        await reanalisis_ctt()
+    except Exception as e:
+        logger.error(f"reanalisis CTT error: {e}")
     try:
         s = await get_settings()
         if int(s["iuran_reminder_mode"]) == 1 and today().day >= int(s["iuran_reminder_tanggal"]):
@@ -779,8 +783,35 @@ async def get_permohonan(pid: str, user=Depends(current_user)):
 async def _petugas_edit(user, p):
     if user["role"] != "admin":
         await require_perm(user, "ubah_hapus_permohonan")
-        if p["status"] != S_ANTRIAN:
-            raise HTTPException(403, "Petugas hanya bisa mengubah/menghapus permohonan yang masih Antrian Analisis")
+        tertahan = p["status"] == S_DIANALISIS and (p.get("analisis") or {}).get("hasil") in HASIL_TERTAHAN
+        if p["status"] != S_ANTRIAN and not tertahan:
+            raise HTTPException(403, "Petugas hanya bisa mengubah/menghapus permohonan Antrian Analisis, Ditunda, atau Tidak Disetujui")
+
+
+HASIL_TERTAHAN = ("Ditunda", "Tidak Disetujui")
+
+
+@api.get("/permohonan-tertahan")
+async def list_tertahan(request: Request, user=Depends(current_user)):
+    if user["role"] != "admin":
+        await require_perm(user, "ubah_hapus_permohonan")
+    f = request.query_params
+    hasil = f.get("hasil")
+    if hasil not in HASIL_TERTAHAN:
+        raise HTTPException(400, "Hasil harus Ditunda atau Tidak Disetujui")
+    q = {"status": S_DIANALISIS, "analisis.hasil": hasil}
+    cu = scope_cu(user, f.get("cu_id"))
+    if cu:
+        q["cu_id"] = cu
+    rows = await db.permohonan.find(q, {"_id": 0}).sort("created_at", -1).to_list(5000)
+    cus = await cu_map()
+    out = []
+    for r in rows:
+        a = r.get("analisis") or {}
+        out.append({k: r.get(k) for k in ("id", "cu_id", "nama", "nomor_anggota", "jenis_kejadian", "tanggal_terima", "tgl_kejadian", "sanduk", "lalau", "lapor_pencairan_id")} | {
+            "cu_nama": cus.get(r["cu_id"], {}).get("nama", "-"), "hasil": a.get("hasil"), "alasan": alasan_text(a),
+            "tanggal_analisis": a.get("tanggal_analisis"), "tunda_ctt": bool(a.get("tunda_ctt")), "tgl_ctt_180": a.get("tgl_ctt_180")})
+    return out
 
 
 @api.post("/permohonan")
@@ -873,8 +904,19 @@ async def _save_analisis(p, body: AnalisisIn, user, s):
     inp.pop("has_lalau_file")
     inp.pop("has_cacat_file")
     analisis = {**inp, **res, "tanggal_analisis": today().isoformat(), "analis": user["email"]}
-    await db.permohonan.update_one({"id": p["id"]}, {"$set": {"analisis": analisis, "status": S_DIANALISIS, "tunda_pencairan": False}})
+    await db.permohonan.update_one({"id": p["id"]}, {"$set": {"analisis": analisis, "status": S_DIANALISIS, "tunda_pencairan": False}, "$unset": {"lapor_pencairan_id": ""}})
     return analisis
+
+
+async def reanalisis_ctt():
+    t = today().isoformat()
+    s, n = await get_settings(), 0
+    for p in await db.permohonan.find({"status": S_DIANALISIS, "analisis.tunda_ctt": True, "analisis.tgl_ctt_180": {"$lte": t}}, {"_id": 0}).to_list(5000):
+        a = p["analisis"]
+        body = AnalisisIn(**{k: a[k] for k in AnalisisIn.model_fields if a.get(k) is not None and not k.endswith("temp_id")})
+        await _save_analisis(p, body, {"email": "sistem (otomatis 180 hari)"}, s)
+        n += 1
+    return n
 
 
 @api.post("/analisis/{pid}")
@@ -931,7 +973,15 @@ async def cairkan(body: CairIn, background: BackgroundTasks, user=Depends(admin_
         if a.get("hasil") not in ("Disetujui", "Disetujui Sebagian") or not a.get("total_disetujui"):
             raise HTTPException(400, f"{r['nama']}: hasil analisis {a.get('hasil')} tidak bisa dicairkan")
     tgl = today().isoformat()
+    rows.sort(key=lambda r: r["nama"])
+    sebagian = [{"id": r["id"], "no": i + 1, "nama": r["nama"], "ba": r.get("nomor_anggota", "-"), "hasil": r["analisis"]["hasil"], "alasan": alasan_text(r["analisis"])}
+                for i, r in enumerate(rows) if r["analisis"]["hasil"] == "Disetujui Sebagian"]
+    tq = {"cu_id": body.cu_id, "status": S_DIANALISIS, "analisis.hasil": {"$in": list(HASIL_TERTAHAN)}, "lapor_pencairan_id": {"$exists": False}}
+    tr = sorted(await db.permohonan.find(tq, {"_id": 0}).to_list(5000), key=lambda r: r["nama"])
+    tertahan = [{"id": r["id"], "nama": r["nama"], "ba": r.get("nomor_anggota", "-"), "jenis_kelamin": r.get("jenis_kelamin"), "jenis_kejadian": r.get("jenis_kejadian"),
+                 "sanduk": int(r.get("sanduk") or 0), "lalau": int(r.get("lalau") or 0), "hasil": r["analisis"]["hasil"], "alasan": alasan_text(r["analisis"])} for r in tr]
     doc = {"id": new_id(), "nomor": nomor, "tanggal": tgl, "cu_id": body.cu_id, "jumlah_anggota": len(rows),
+           "sebagian": sebagian, "tertahan": tertahan,
            "sanduk": sum(r["analisis"]["sanduk_disetujui"] for r in rows),
            "lalau": sum(r["analisis"]["lalau_disetujui"] for r in rows),
            "created_by": user["email"], "created_at": now_iso()}
@@ -939,6 +989,8 @@ async def cairkan(body: CairIn, background: BackgroundTasks, user=Depends(admin_
     await db.pencairan.insert_one(doc)
     await db.permohonan.update_many({"id": {"$in": body.permohonan_ids}}, {"$set": {
         "status": S_CAIR, "pencairan_id": doc["id"], "nomor_pencairan": nomor, "tanggal_cair": tgl}})
+    if tertahan:
+        await db.permohonan.update_many({"id": {"$in": [t["id"] for t in tertahan]}}, {"$set": {"lapor_pencairan_id": doc["id"]}})
     m = re.match(r"^\s*(\d+)", nomor)
     s = await get_settings()
     if m and int(m.group(1)) >= s["nomor_berikutnya"]:
@@ -956,6 +1008,7 @@ async def batal_pencairan(cid: str, background: BackgroundTasks, _=Depends(admin
     r = await db.permohonan.update_many({"pencairan_id": cid}, {
         "$set": {"status": S_DIANALISIS, "tunda_pencairan": False},
         "$unset": {"pencairan_id": "", "nomor_pencairan": "", "tanggal_cair": ""}})
+    await db.permohonan.update_many({"lapor_pencairan_id": cid}, {"$unset": {"lapor_pencairan_id": ""}})
     await db.pencairan.delete_one({"id": cid})
     background.add_task(check_defisit)
     return {"dikembalikan": r.modified_count}

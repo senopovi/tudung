@@ -8,6 +8,7 @@ import { PageHeader, Field } from "@/components/Common";
 import { CuSelect } from "@/components/Controls";
 import { errMsg } from "@/lib/api";
 import { ReportShell, PencairanTable } from "@/components/Report";
+import { PencairanNarasi } from "@/components/PencairanNarasi";
 import { useAuth } from "@/context/AuthContext";
 import { api, rp, tgl, tglS } from "@/lib/api";
 
@@ -75,6 +76,7 @@ export default function BantuanCair() {
           {cur && (
             <ReportShell cuId={cur.cu_id} title="Daftar Pencairan Bantuan Tudung" lines={[`Nomor: ${cur.nomor}`, `Credit Union: ${cur.cu_nama}`, `Tanggal Pencairan: ${tgl(cur.tanggal)}`]} fileName={`Pencairan_${cur.nomor.replace(/\//g, "-")}`}>
               <PencairanTable rows={rows} />
+              <PencairanNarasi cur={cur} />
             </ReportShell>
           )}
         </div>

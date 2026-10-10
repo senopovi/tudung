@@ -18,6 +18,7 @@ import Laporan from "@/pages/Laporan";
 import DataInduk from "@/pages/DataInduk";
 import Pengaturan from "@/pages/Pengaturan";
 import TandaTanganCU from "@/pages/TandaTanganCU";
+import PermohonanTertahan from "@/pages/PermohonanTertahan";
 
 const Guard = ({ children, admin }) => {
   const { user, isAdmin } = useAuth();
@@ -44,6 +45,8 @@ function App() {
             <Route path="permohonan/:id/ubah" element={<PermohonanForm />} />
             <Route path="permohonan/:id" element={<PermohonanDetail />} />
             <Route path="analisis" element={A(<AnalisisList />)} />
+            <Route path="permohonan-ditunda" element={<PermohonanTertahan key="d" hasil="Ditunda" />} />
+            <Route path="permohonan-tidak-disetujui" element={<PermohonanTertahan key="t" hasil="Tidak Disetujui" />} />
             <Route path="analisis/:id" element={A(<AnalisisDetail />)} />
             <Route path="pencairan" element={A(<Pencairan />)} />
             <Route path="bantuan-cair" element={<BantuanCair />} />
