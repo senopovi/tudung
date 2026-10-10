@@ -68,6 +68,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Tanda tangan: Admin Pusat mencetak -> selalu PUSKOPDIT; tanda tangan CU hanya saat Petugas CU mencetak
 - (2026-10-10) Narasi Disetujui Sebagian di surat pencairan selalu bernomor mulai 1 (hanya baris Disetujui Sebagian)
 - (2026-10-10) Hak input iuran per jenis: iuran_sanduk/iuran_lalau/iuran_biris/iuran_gppk (default aktif) di Hak Akses CU & User; backend _check_jenis menolak tambah/ubah/hapus nilai jenis yang tidak diizinkan; form Iuran menonaktifkan kolom "(tidak ada hak)"
+- (2026-10-10) Ekspor Word (.doc, MHTML yang dibuka Microsoft Word) di semua laporan ReportShell: tombol "Ekspor Word" (wordExport.js) - salin gaya tampilan, kop & gambar tanda tangan disertakan, grafik dikonversi ke PNG, ukuran kertas/orientasi mengikuti pilihan, halaman tambahan dipisah page break; nomor halaman tidak termasuk
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

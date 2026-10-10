@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { useEffect, useState } from "react";
-import { Printer, FileSpreadsheet } from "lucide-react";
+import { Printer, FileSpreadsheet, FileText } from "lucide-react";
+import { exportWord } from "@/components/wordExport";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,9 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
         </ToggleGroup>
         <Button variant="outline" onClick={() => exportExcel(fileName)} disabled={!ready} data-testid="report-excel-btn">
           <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-700" /> Ekspor Excel
+        </Button>
+        <Button variant="outline" onClick={() => exportWord({ fileName, pw, ph, landscape: ori === "landscape" })} disabled={!ready} data-testid="report-word-btn">
+          <FileText className="mr-2 h-4 w-4 text-blue-700" /> Ekspor Word
         </Button>
         <Button onClick={() => window.print()} disabled={!ready} className="bg-[#155e46] hover:bg-[#0d3b2e]" data-testid="report-print-btn">
           <Printer className="mr-2 h-4 w-4" /> Cetak / PDF
