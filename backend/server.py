@@ -15,12 +15,14 @@ from typing import Optional, List
 import bcrypt
 import jwt
 from bson import Binary
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File, Response, BackgroundTasks
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
-from calc import analyze, DEFAULT_SETTINGS, format_nomor
+from calc import analyze, DEFAULT_SETTINGS, format_nomor, rp
+from email_service import send_email, EMAIL_FROM_NAME
+from html import escape
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
@@ -559,7 +561,7 @@ class CairIn(BaseModel):
 
 
 @api.post("/pencairan")
-async def cairkan(body: CairIn, user=Depends(admin_user)):
+async def cairkan(body: CairIn, background: BackgroundTasks, user=Depends(admin_user)):
     nomor = body.nomor.strip()
     if not nomor or not body.permohonan_ids:
         raise HTTPException(400, "Nomor pencairan dan data wajib diisi")
@@ -590,11 +592,12 @@ async def cairkan(body: CairIn, user=Depends(admin_user)):
     if m and int(m.group(1)) >= s["nomor_berikutnya"]:
         await db.settings.update_one({"key": "app"}, {"$set": {"nomor_berikutnya": int(m.group(1)) + 1}}, upsert=True)
     doc.pop("_id", None)
+    background.add_task(check_defisit)
     return doc
 
 
 @api.delete("/pencairan/{cid}")
-async def batal_pencairan(cid: str, _=Depends(admin_user)):
+async def batal_pencairan(cid: str, background: BackgroundTasks, _=Depends(admin_user)):
     doc = await db.pencairan.find_one({"id": cid})
     if not doc:
         raise HTTPException(404, "Pencairan tidak ditemukan")
@@ -602,6 +605,7 @@ async def batal_pencairan(cid: str, _=Depends(admin_user)):
         "$set": {"status": S_DIANALISIS, "tunda_pencairan": False},
         "$unset": {"pencairan_id": "", "nomor_pencairan": "", "tanggal_cair": ""}})
     await db.pencairan.delete_one({"id": cid})
+    background.add_task(check_defisit)
     return {"dikembalikan": r.modified_count}
 
 
@@ -677,18 +681,20 @@ async def list_iuran(request: Request, user=Depends(current_user)):
 
 
 @api.post("/iuran")
-async def create_iuran(body: IuranBatch, user=Depends(current_user)):
+async def create_iuran(body: IuranBatch, background: BackgroundTasks, user=Depends(current_user)):
     if not body.items:
         raise HTTPException(400, "Tidak ada data iuran")
     for i in body.items:
         check_cu(user, i.cu_id)
     docs = [{**_iuran(i), "id": new_id(), "created_at": now_iso()} for i in body.items]
     await db.iuran.insert_many(docs)
+    background.add_task(check_defisit)
     return {"disimpan": len(docs)}
 
 
 @api.put("/iuran/{iid}")
-async def update_iuran(iid: str, body: IuranIn, user=Depends(current_user)):
+async def update_iuran(iid: str, body: IuranIn, background: BackgroundTasks, user=Depends(current_user)):
+    background.add_task(check_defisit)
     await _own_iuran(iid, user)
     check_cu(user, body.cu_id)
     await db.iuran.update_one({"id": iid}, {"$set": _iuran(body)})
@@ -696,7 +702,8 @@ async def update_iuran(iid: str, body: IuranIn, user=Depends(current_user)):
 
 
 @api.delete("/iuran/{iid}")
-async def delete_iuran(iid: str, user=Depends(current_user)):
+async def delete_iuran(iid: str, background: BackgroundTasks, user=Depends(current_user)):
+    background.add_task(check_defisit)
     await _own_iuran(iid, user)
     await db.iuran.delete_one({"id": iid})
     return {"ok": True}
@@ -731,6 +738,53 @@ async def demo_reset(_=Depends(admin_user)):
             await db.credit_unions.delete_one({"id": cu["id"]})
             removed += 1
     return {"permohonan": len(rows), "cu": removed, "cu_dipertahankan": kept}
+
+
+# ---------- Notifikasi Defisit ----------
+async def check_defisit():
+    try:
+        d = await _defisit({}, await cu_map())
+        tahun = d["tahun"]
+        now = {i["cu_id"]: i for i in d["items"]}
+        prev = {s["cu_id"] for s in await db.defisit_state.find({"tahun": tahun, "defisit": True}).to_list(1000)}
+        for cid in prev - now.keys():
+            await db.defisit_state.update_one({"cu_id": cid, "tahun": tahun}, {"$set": {"defisit": False}})
+        new = [now[c] for c in now if c not in prev]
+        if not new:
+            return
+        for i in new:
+            await db.defisit_state.update_one({"cu_id": i["cu_id"], "tahun": tahun}, {"$set": {"defisit": True, "at": now_iso()}}, upsert=True)
+        admins = [u["email"] for u in await db.users.find({"role": "admin", "aktif": {"$ne": False}}, {"email": 1}).to_list(100)]
+        if not admins:
+            return
+        rows = "".join(
+            f'<tr><td style="padding:6px 10px;border:1px solid #e5e3dc">{escape(i["kode"])} - {escape(i["nama"])}</td>'
+            f'<td style="padding:6px 10px;border:1px solid #e5e3dc;text-align:right">Rp {rp(i["iuran"])}</td>'
+            f'<td style="padding:6px 10px;border:1px solid #e5e3dc;text-align:right">Rp {rp(i["cair"])}</td>'
+            f'<td style="padding:6px 10px;border:1px solid #e5e3dc;text-align:right;color:#b91c1c;font-weight:bold">Rp {rp(i["selisih"])}</td></tr>'
+            for i in new)
+        subject = f"[{EMAIL_FROM_NAME}] Peringatan Defisit: {len(new)} Credit Union tahun {tahun}"
+        html = (
+            '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1c1917">'
+            f'<h2 style="color:#b91c1c;margin:0 0 12px">Peringatan Defisit Tudung {tahun}</h2>'
+            '<p>Credit Union berikut baru masuk status <b>defisit</b>: total pencairan Tudung melebihi total iuran pada tahun berjalan.</p>'
+            '<table style="border-collapse:collapse;font-size:14px"><tr style="background:#eef3ef">'
+            '<th style="padding:6px 10px;border:1px solid #e5e3dc;text-align:left">Credit Union</th>'
+            '<th style="padding:6px 10px;border:1px solid #e5e3dc">Total Iuran</th>'
+            '<th style="padding:6px 10px;border:1px solid #e5e3dc">Total Pencairan</th>'
+            f'<th style="padding:6px 10px;border:1px solid #e5e3dc">Selisih</th></tr>{rows}</table>'
+            '<p>Silakan buka aplikasi dan lihat menu Laporan, Iuran vs Pencairan, untuk detail bulan per bulan.</p>'
+            f'<p style="font-size:12px;color:#888">Email otomatis dari {escape(EMAIL_FROM_NAME)}.</p></td></tr></table>')
+        ok, info = await send_email(to=admins, subject=subject, html=html)
+        await db.notif_log.insert_one({"id": new_id(), "jenis": "defisit", "tahun": tahun, "cu": [f"{i['kode']} - {i['nama']}" for i in new],
+                                       "penerima": admins, "terkirim": ok, "info": info, "created_at": now_iso()})
+    except Exception as e:
+        logger.error(f"check_defisit error: {e}")
+
+
+@api.get("/notifikasi")
+async def list_notif(_=Depends(admin_user)):
+    return await db.notif_log.find({}, {"_id": 0}).sort("created_at", -1).to_list(20)
 
 
 # ---------- Dashboard ----------

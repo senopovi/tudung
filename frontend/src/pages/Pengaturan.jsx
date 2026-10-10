@@ -23,8 +23,9 @@ export default function Pengaturan() {
   const ref = useRef(null);
   const [demo, setDemo] = useState(null);
   const [askReset, setAskReset] = useState(false);
+  const [notif, setNotif] = useState([]);
   const loadDemo = () => api.get("/demo-data").then((r) => setDemo(r.data));
-  useEffect(() => { api.get("/settings").then((r) => setS(r.data)); loadDemo(); }, []);
+  useEffect(() => { api.get("/settings").then((r) => setS(r.data)); loadDemo(); api.get("/notifikasi").then((r) => setNotif(r.data)); }, []);
   if (!s) return <p className="text-sm text-muted-foreground">Memuat...</p>;
   const set = (k) => (v) => setS((o) => ({ ...o, [k]: v?.target ? Number(v.target.value) : v }));
   const setB = (i, k, v) => setS((o) => ({ ...o, sanduk_brackets: o.sanduk_brackets.map((b, j) => (j === i ? { ...b, [k]: v } : b)) }));
@@ -115,6 +116,19 @@ export default function Pengaturan() {
           <div className="flex gap-2">
             <Button onClick={() => ref.current?.click()} className="bg-[#155e46] hover:bg-[#0d3b2e]" data-testid="kop-upload-btn"><Upload className="mr-2 h-4 w-4" /> Upload JPG/PNG</Button>
             {org.settings.kop_surat && <Button variant="outline" onClick={delKop} data-testid="kop-delete-btn"><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>}
+          </div>
+        </Card>
+
+        <Card title="Notifikasi Email Defisit">
+          <p className="text-sm text-muted-foreground">Email otomatis dikirim ke semua Admin Pusat aktif setiap kali ada Credit Union yang baru masuk status defisit (pencairan melebihi iuran tahun berjalan). Pengecekan berjalan setelah pencairan, batal pencairan, dan perubahan iuran.</p>
+          <div className="mt-4 space-y-2" data-testid="notif-log">
+            {notif.length === 0 && <p className="rounded border border-dashed p-4 text-center text-xs text-muted-foreground">Belum ada notifikasi terkirim.</p>}
+            {notif.map((n) => (
+              <div key={n.id} className="rounded-md border px-3 py-2 text-xs">
+                <div className="flex justify-between gap-2"><b>{n.cu.join(", ")}</b><span className={n.terkirim ? "text-emerald-700" : "text-red-600"}>{n.terkirim ? "Terkirim" : `Gagal (${n.info})`}</span></div>
+                <p className="text-muted-foreground">{new Date(n.created_at).toLocaleString("id-ID")} • ke {n.penerima.join(", ")}</p>
+              </div>
+            ))}
           </div>
         </Card>
 

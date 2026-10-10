@@ -27,6 +27,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Dashboard: grafik tren Iuran Tudung & Saldo Pencairan 12 bulan terakhir (GET /api/dashboard -> tren), dengan filter CU untuk admin (GET /api/dashboard/tren?cu_id=)
 - Laporan Perbandingan Iuran vs Pencairan (ringkasan per CU / detail bulanan, selisih & rasio)
 - Peringatan defisit: baris merah "(DEFISIT)" di laporan perbandingan + kartu peringatan merah di Dashboard (CU dengan pencairan > iuran tahun berjalan)
+- Notifikasi email defisit (Emergent-managed Resend, `email_service.py`): check_defisit() berjalan di background setelah pencairan/batal/iuran; email hanya saat CU BARU masuk defisit (state di `defisit_state`), ke semua admin aktif; riwayat di `notif_log` (GET /api/notifikasi, kartu di Pengaturan)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi
