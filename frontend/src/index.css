@@ -53,6 +53,8 @@ body {
 .data-table tbody tr:hover { @apply bg-emerald-50/50; }
 
 .paper { width: 100%; max-width: 210mm; margin: 0 auto; background: #fff; padding: 12mm; box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 30px rgba(13,59,46,.06); color: #000; }
+.paper.paper-landscape { max-width: 297mm; }
+.paper.paper-landscape .print-wrap > thead img { max-width: 180mm; margin-left: auto; margin-right: auto; display: block; }
 .rpt-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; table-layout: auto; }
 .rpt-table th, .rpt-table td { border: 1px solid #000; padding: 3px 4px; vertical-align: middle; }
 .rpt-table th { background: #eef3ef; text-align: center; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

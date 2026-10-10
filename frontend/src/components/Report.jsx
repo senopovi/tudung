@@ -1,5 +1,7 @@
 import * as XLSX from "xlsx";
+import { useState } from "react";
 import { Printer, FileSpreadsheet } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { tgl, todayISO } from "@/lib/api";
@@ -41,10 +43,18 @@ export const Signatures = ({ p }) => (
 
 export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, children, ready = true }) => {
   const { org } = useAuth();
+  const key = `tudung-orientasi:${title}`;
+  const [ori, setOri] = useState(() => localStorage.getItem(key) || "portrait");
+  const pickOri = (v) => { if (!v) return; setOri(v); localStorage.setItem(key, v); };
   return (
     <div className="space-y-5">
+      {ori === "landscape" && <style>{"@page { size: A4 landscape; }"}</style>}
       {filters && <div className="no-print rounded-lg border bg-white p-4 shadow-sm" data-testid="report-filters">{filters}</div>}
-      <div className="no-print flex flex-wrap justify-end gap-2">
+      <div className="no-print flex flex-wrap items-center justify-end gap-2">
+        <ToggleGroup type="single" value={ori} onValueChange={pickOri} className="rounded-md border bg-white p-0.5" data-testid="report-orientation">
+          <ToggleGroupItem value="portrait" size="sm" className="data-[state=on]:bg-[#155e46] data-[state=on]:text-white" data-testid="report-orientation-portrait">Potret</ToggleGroupItem>
+          <ToggleGroupItem value="landscape" size="sm" className="data-[state=on]:bg-[#155e46] data-[state=on]:text-white" data-testid="report-orientation-landscape">Lanskap</ToggleGroupItem>
+        </ToggleGroup>
         <Button variant="outline" onClick={() => exportExcel(fileName)} disabled={!ready} data-testid="report-excel-btn">
           <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-700" /> Ekspor Excel
         </Button>
@@ -53,7 +63,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
         </Button>
       </div>
       <div className="overflow-x-auto">
-        <div className="paper print-area" data-testid="report-paper">
+        <div className={`paper print-area ${ori === "landscape" ? "paper-landscape" : ""}`} data-testid="report-paper">
           <table className="print-wrap" data-testid="report-print-wrap">
             <thead><tr><td><Kop settings={org.settings} p={org.puskopdit} /></td></tr></thead>
             <tbody><tr><td>
