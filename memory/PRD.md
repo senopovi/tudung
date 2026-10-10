@@ -61,6 +61,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Laporan Iuran Tudung dipecah: tabel 1 (Sanduk, Lalau, Saldo, Keterangan) + halaman baru (ReportShell prop `extra`, class .report-next-page break-before page) "LAPORAN IURAN / BIRIS PANGKARAS DAN SOLIDARITAS GPPK" (Biris, Sol. GPPK, Saldo = Biris+GPPK, Keterangan2) dengan CU, Tahun Buku, dan blok tanda tangan sendiri; Ekspor Excel menambah sheet "Laporan 2" (#report-table-2)
 - (2026-10-10) Halaman ke-3 Laporan Iuran: "REKAP TAHUNAN IURAN" (No, Bulan, Sanduk, Lalau, Biris Pangkaras, Sol. GPPK, Total Iuran + JUMLAH) dengan tanda tangan; ReportShell `extra` menerima array halaman; Excel sheet "Laporan 3" (#report-table-3)
 - (2026-10-10) Laporan admin "Rekap Iuran Semua CU" (/laporan/rekap-iuran, LapRekapIuranCU di LaporanIuran.jsx): satu baris per CU (Kode, Nama, Sanduk, Lalau, Biris, GPPK, Total) + JUMLAH, filter Tahun Buku (rentang Des tahun-1 s/d Des tahun, sama dengan Lap. Iuran)
+- (2026-10-10) Rekap Iuran Semua CU: pilihan Urutkan (Kode CU default / Total Iuran Terbesar, seri diurut kode) + keterangan urutan di bawah judul
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

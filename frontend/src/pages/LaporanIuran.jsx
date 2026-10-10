@@ -77,6 +77,7 @@ const RekapTable = ({ months, tot }) => (
 export function LapRekapIuranCU() {
   const { org } = useAuth();
   const [tahun, setTahun] = useState(new Date().getFullYear());
+  const [urut, setUrut] = useState("kode");
   const [rows, setRows] = useState([]);
   useEffect(() => {
     api.get("/iuran", { params: { dari: `${tahun - 1}-12-01`, sampai: `${tahun}-12-31` } }).then((r) => setRows(r.data));
@@ -84,11 +85,12 @@ export function LapRekapIuranCU() {
   const data = useMemo(() => org.cus.map((c) => {
     const rs = rows.filter((r) => r.cu_id === c.id);
     return { id: c.id, kode: c.kode, nama: c.nama, ...Object.fromEntries(REKAP.map(([k]) => [k, rs.reduce((a, r) => a + (r[k] || 0), 0)])) };
-  }), [rows, org.cus]);
+  }).sort((a, b) => (urut === "total" ? rekapTotal(b) - rekapTotal(a) : 0) || a.kode.localeCompare(b.kode)), [rows, org.cus, urut]);
   const tot = Object.fromEntries(REKAP.map(([k]) => [k, data.reduce((a, r) => a + r[k], 0)]));
   return (
-    <ReportShell title="Rekap Tahunan Iuran Semua Credit Union" lines={[`Tahun Buku ${tahun}`, `Jumlah: ${org.cus.length} Credit Union`]} fileName={`Rekap_Iuran_Semua_CU_${tahun}`}
-      filters={<div className="max-w-xs"><Field label="Tahun Buku"><Input type="number" value={tahun} onChange={(e) => setTahun(Number(e.target.value))} data-testid="rekap-iuran-cu-tahun" /></Field></div>}>
+    <ReportShell title="Rekap Tahunan Iuran Semua Credit Union" lines={[`Tahun Buku ${tahun}`, `Jumlah: ${org.cus.length} Credit Union`, urut === "total" ? "(Urut berdasarkan Total Iuran terbesar)" : null]} fileName={`Rekap_Iuran_Semua_CU_${tahun}`}
+      filters={<div className="grid gap-4 md:grid-cols-2"><Field label="Tahun Buku"><Input type="number" value={tahun} onChange={(e) => setTahun(Number(e.target.value))} data-testid="rekap-iuran-cu-tahun" /></Field>
+        <Field label="Urutkan"><RG value={urut} onChange={setUrut} testid="rekap-iuran-cu-urut" options={[["kode", "Kode CU"], ["total", "Total Iuran Terbesar"]]} /></Field></div>}>
       <table className="rpt-table" id="report-table" data-testid="rekap-iuran-cu-table">
         <thead><tr><th>No.</th><th>Kode</th><th>Credit Union</th>{REKAP.map(([k, l]) => <th key={k}>{l}</th>)}<th>Total Iuran</th></tr></thead>
         <tbody>
