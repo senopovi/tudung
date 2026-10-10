@@ -199,7 +199,7 @@ export default function Laporan() {
   const [title, Comp] = MAP[jenis] || MAP.permohonan;
   return (
     <div>
-      <div className="no-print"><PageHeader title={title} subtitle={`Format A4 dengan kop surat • ${KEJADIAN.meninggal} & ${KEJADIAN.cacat}`} /></div>
+      <div className="no-print"><PageHeader title={title} subtitle={`Format A4/F4 dengan kop surat • ${KEJADIAN.meninggal} & ${KEJADIAN.cacat}`} /></div>
       <Comp key={jenis} />
     </div>
   );

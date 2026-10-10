@@ -73,7 +73,7 @@ const NavList = ({ isAdmin, can, onNav }) => (
 
 const Brand = () => (
   <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-amber-400 to-amber-600 font-extrabold text-[#0d3b2e]">T</div>
+    <img src="/logo-pusaka.png" alt="Logo PUSAKA" className="h-12 w-12 shrink-0 rounded-full bg-white p-0.5 shadow-sm ring-2 ring-amber-400/70" data-testid="sidebar-logo" />
     <div>
       <p className="text-lg font-extrabold leading-none tracking-tight text-white">Tudung</p>
       <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300/90">Pusaka</p>
@@ -111,6 +111,7 @@ export default function Layout() {
       <div className="lg:pl-64">
         <header className="no-print sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-white/90 px-4 backdrop-blur-md md:px-8">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(true)} data-testid="mobile-menu-btn"><Menu className="h-5 w-5" /></Button>
+          <img src="/logo-pusaka.png" alt="Logo PUSAKA" className="h-9 w-9 lg:hidden" data-testid="mobile-header-logo" />
           <div className="flex-1" />
           <span className="hidden items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 sm:flex" data-testid="user-role-badge">
             {isAdmin ? <ShieldCheck className="h-3.5 w-3.5" /> : <Building2 className="h-3.5 w-3.5" />}

@@ -9,7 +9,7 @@ const Shell = ({ title, subtitle, children }) => (
   <div className="flex min-h-screen items-center justify-center bg-[#fafaf7] p-6">
     <div className="w-full max-w-sm space-y-5 rounded-lg border bg-white p-7 shadow-sm fade-up">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-amber-400 to-amber-600 font-extrabold text-[#0d3b2e]">T</div>
+        <img src="/logo-pusaka.png" alt="Logo PUSAKA" className="h-12 w-12 shrink-0" data-testid="reset-logo" />
         <div>
           <h2 className="text-xl font-bold text-[#0d3b2e]">{title}</h2>
           <p className="text-xs text-muted-foreground">{subtitle}</p>

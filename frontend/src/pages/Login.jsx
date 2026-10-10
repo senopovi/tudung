@@ -34,7 +34,7 @@ export default function Login() {
       <div className="relative hidden overflow-hidden bg-[#0d3b2e] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(#f59e0b 1px, transparent 1px)", backgroundSize: "22px 22px" }} />
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-md bg-gradient-to-br from-amber-400 to-amber-600 text-xl font-extrabold text-[#0d3b2e]">T</div>
+          <img src="/logo-pusaka.png" alt="Logo PUSAKA" className="h-16 w-16 rounded-full bg-white p-1 shadow-md ring-2 ring-amber-400/70" data-testid="login-brand-logo" />
           <div>
             <p className="text-xl font-extrabold leading-none">Tudung</p>
             <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-300">Pusaka</p>
@@ -49,6 +49,7 @@ export default function Login() {
       </div>
       <div className="flex items-center justify-center bg-[#fafaf7] p-6">
         <form onSubmit={submit} className="w-full max-w-sm space-y-5 fade-up" data-testid="login-form">
+          <img src="/logo-pusaka.png" alt="Logo PUSAKA" className="h-24 w-24 mix-blend-multiply" data-testid="login-form-logo" />
           <div>
             <h2 className="text-2xl font-bold text-[#0d3b2e]">Masuk ke Tudung</h2>
             <p className="mt-1 text-sm text-muted-foreground">Gunakan akun yang diberikan Admin Pusat.</p>

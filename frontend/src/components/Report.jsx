@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Printer, FileSpreadsheet } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { tgl, todayISO } from "@/lib/api";
 
@@ -24,7 +25,7 @@ const Kop = ({ settings, p }) =>
     </div>
   );
 
-export const Signatures = ({ p }) => (
+export const Signatures = ({ p, tanggal }) => (
   <div className="mt-8 grid grid-cols-2 gap-8 text-[10pt]" style={{ pageBreakInside: "avoid" }} data-testid="report-signatures">
     <div className="text-center">
       <p>&nbsp;</p>
@@ -33,7 +34,7 @@ export const Signatures = ({ p }) => (
       <p className="font-bold underline">{p.manager || "(.............................)"}</p>
     </div>
     <div className="text-center">
-      <p>{tgl(todayISO())}</p>
+      <p data-testid="report-signature-date">{tgl(tanggal || todayISO())}</p>
       <p>Bagian Tudung</p>
       <div className="h-20" />
       <p className="font-bold underline">{p.bagian_tudung || "(.............................)"}</p>
@@ -51,6 +52,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
   const kKey = `tudung-kertas:${title}`;
   const [kertas, setKertas] = useState(() => localStorage.getItem(kKey) || "A4");
   const pickKertas = (v) => { if (!v) return; setKertas(v); localStorage.setItem(kKey, v); };
+  const [ttd, setTtd] = useState(todayISO());
   const [w, h] = KERTAS[kertas] || KERTAS.A4;
   const [pw, ph] = ori === "landscape" ? [h, w] : [w, h];
   return (
@@ -58,6 +60,10 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
       <style>{`@page { size: ${pw}mm ${ph}mm; }`}</style>
       {filters && <div className="no-print rounded-lg border bg-white p-4 shadow-sm" data-testid="report-filters">{filters}</div>}
       <div className="no-print flex flex-wrap items-center justify-end gap-2">
+        <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          Tgl. Tanda Tangan
+          <Input type="date" value={ttd} onChange={(e) => setTtd(e.target.value || todayISO())} className="h-9 w-40" data-testid="report-signature-date-input" />
+        </label>
         <ToggleGroup type="single" value={kertas} onValueChange={pickKertas} className="rounded-md border bg-white p-0.5" data-testid="report-paper-size">
           {Object.keys(KERTAS).map((k) => (
             <ToggleGroupItem key={k} value={k} size="sm" className="data-[state=on]:bg-[#155e46] data-[state=on]:text-white" data-testid={`report-paper-size-${k.toLowerCase()}`}>{k}</ToggleGroupItem>
@@ -86,7 +92,7 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
                 ))}
               </div>
               {children}
-              <Signatures p={org.puskopdit} />
+              <Signatures p={org.puskopdit} tanggal={ttd} />
             </td></tr></tbody>
           </table>
         </div>
