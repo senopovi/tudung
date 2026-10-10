@@ -24,7 +24,8 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Seed demo `backend/seed_demo.py`: 6 CU (CUG-001..006, nama/manager/alamat placeholder) x 9 permohonan berbagai kriteria, BA 3 + 1236*k, masing-masing dengan PDF contoh
 - Reset Data Contoh (Pengaturan): GET/DELETE /api/demo-data; hapus permohonan created_by=seed-demo + berkas + pencairan terkait; CU demo (flag demo=true) dihapus bila tidak berisi data asli/iuran/user
 - 6 laporan analitik (frontend `LaporanAnalitik.jsx`): Saldo Pencairan per periode, Penerima L/P per periode, Permohonan Tidak Disetujui + alasan, Tren iuran & pencairan (grafik), Anggota per usia meninggal/masuk, Rating CU
-- Dashboard: grafik tren Iuran Tudung & Saldo Pencairan 12 bulan terakhir (GET /api/dashboard -> tren)
+- Dashboard: grafik tren Iuran Tudung & Saldo Pencairan 12 bulan terakhir (GET /api/dashboard -> tren), dengan filter CU untuk admin (GET /api/dashboard/tren?cu_id=)
+- Laporan Perbandingan Iuran vs Pencairan (ringkasan per CU / detail bulanan, selisih & rasio)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi
