@@ -16,6 +16,8 @@ DEFAULT_SETTINGS = {
     "sanduk_max_anggota_baru": 12500000,
     "lalau_max": 300000000,
     "nomor_berikutnya": 1,
+    "auto_nonaktif": 0,
+    "auto_nonaktif_hari": 90,
 }
 
 ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]

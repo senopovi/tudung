@@ -32,6 +32,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Tombol "Kirim email uji" (POST /api/notifikasi/uji, 1x/menit) ke semua admin aktif
 - Ubah Password sendiri di header (POST /api/auth/change-password: password lama + baru)
 - Riwayat login: users.last_login_at/login_count + koleksi login_history; kolom "Login Terakhir" (Aktif ≤7 hr, Jarang ≤30 hr, Tidak aktif) di Data User + dialog 20 login terakhir (GET /api/users/{id}/login-history)
+- Nonaktif otomatis petugas (settings auto_nonaktif 0/1, auto_nonaktif_hari=90, default OFF): dicek saat login, buka Data User, dan startup; baseline max(last_login_at, created_at, reactivated_at); login nonaktif -> 403 pesan jelas
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

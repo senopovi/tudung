@@ -131,7 +131,7 @@ function UsersTab() {
     <>
     <CrudTab title="Pengguna" testid="user" rows={rows} onSave={onSave} onDelete={onDelete} renderField={renderField}
     fields={[["name", "Nama"], ["email", "Email (Username)"], ["password", "Password (kosongkan bila tidak diubah)"], ["role", "Peran"], ["cu_id", "Credit Union"], ["aktif", "Status"]]}
-    columns={[["name", "Nama"], ["email", "Email"], ["role", "Peran", (r) => (r.role === "admin" ? "Admin Pusat" : "Petugas CU")], ["cu", "Credit Union", (r) => (r.role === "admin" ? "Semua" : cuName(r.cu_id))], ["aktif", "Status", (r) => (r.aktif === false ? "Nonaktif" : "Aktif")], ["login", "Login Terakhir", (r) => <LastLogin r={r} onOpen={() => openHist(r)} />]]} />
+    columns={[["name", "Nama"], ["email", "Email"], ["role", "Peran", (r) => (r.role === "admin" ? "Admin Pusat" : "Petugas CU")], ["cu", "Credit Union", (r) => (r.role === "admin" ? "Semua" : cuName(r.cu_id))], ["aktif", "Status", (r) => (r.aktif === false ? <span className="text-red-700" data-testid={`status-${r.id}`}>{r.nonaktif_otomatis ? "Nonaktif (otomatis)" : "Nonaktif"}</span> : "Aktif")], ["login", "Login Terakhir", (r) => <LastLogin r={r} onOpen={() => openHist(r)} />]]} />
     <Dialog open={!!hist} onOpenChange={() => setHist(null)}>
       <DialogContent className="max-w-lg" data-testid="login-history-dialog">
         <DialogHeader><DialogTitle>Riwayat Login: {hist?.u.name}</DialogTitle></DialogHeader>

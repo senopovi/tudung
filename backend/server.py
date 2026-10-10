@@ -124,7 +124,10 @@ async def login(body: LoginIn, request: Request):
     att = await db.login_attempts.find_one({"identifier": ident})
     if att and att.get("count", 0) >= 5 and att.get("until", "") > now_iso():
         raise HTTPException(429, "Terlalu banyak percobaan. Coba lagi 15 menit lagi.")
+    await auto_deactivate()
     user = await db.users.find_one({"email": email})
+    if user and verify_pw(body.password, user["password_hash"]) and not user.get("aktif", True):
+        raise HTTPException(403, "Akun Anda nonaktif" + (" karena tidak login lebih dari batas hari yang ditentukan" if user.get("nonaktif_otomatis") else "") + ". Hubungi Admin Pusat.")
     if not user or not verify_pw(body.password, user["password_hash"]) or not user.get("aktif", True):
         cnt = (att or {}).get("count", 0) + 1
         until = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
@@ -236,7 +239,21 @@ class UserIn(BaseModel):
 
 @api.get("/users")
 async def list_users(_=Depends(admin_user)):
+    await auto_deactivate()
     return await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", 1).to_list(2000)
+
+
+async def auto_deactivate():
+    s = await get_settings()
+    if not s.get("auto_nonaktif"):
+        return 0
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=int(s["auto_nonaktif_hari"]))).isoformat()
+    n = 0
+    for u in await db.users.find({"role": "petugas", "aktif": {"$ne": False}}, {"_id": 0, "id": 1, "last_login_at": 1, "created_at": 1, "reactivated_at": 1}).to_list(5000):
+        if max(u.get("last_login_at") or "", u.get("created_at") or "", u.get("reactivated_at") or "") < cutoff:
+            await db.users.update_one({"id": u["id"]}, {"$set": {"aktif": False, "nonaktif_otomatis": True, "nonaktif_at": now_iso()}})
+            n += 1
+    return n
 
 
 def _user_doc(body: UserIn):
@@ -267,6 +284,9 @@ async def update_user(uid: str, body: UserIn, admin=Depends(admin_user)):
         raise HTTPException(400, "Email sudah terdaftar")
     if uid == admin["id"] and (doc["role"] != "admin" or not doc["aktif"]):
         raise HTTPException(400, "Tidak bisa menurunkan/menonaktifkan akun sendiri")
+    old = await db.users.find_one({"id": uid}, {"aktif": 1})
+    if doc["aktif"] and old and old.get("aktif") is False:
+        doc.update({"reactivated_at": now_iso(), "nonaktif_otomatis": False})
     if body.password:
         if len(body.password) < 6:
             raise HTTPException(400, "Password minimal 6 karakter")
@@ -989,6 +1009,7 @@ async def startup():
                                    "aktif": True, "password_hash": hash_pw(pw), "created_at": now_iso()})
     old = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
     await db.temp_files.delete_many({"created_at": {"$lt": old}})
+    await auto_deactivate()
 
 
 @app.on_event("shutdown")

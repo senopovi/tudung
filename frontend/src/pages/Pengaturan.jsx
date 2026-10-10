@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader, Field } from "@/components/Common";
 import { MoneyInput } from "@/components/MoneyInput";
+import { Switch } from "@/components/ui/switch";
 import { Confirm } from "@/components/Controls";
 import { useAuth } from "@/context/AuthContext";
 import { api, errMsg, todayISO } from "@/lib/api";
@@ -126,6 +127,17 @@ export default function Pengaturan() {
             <Button onClick={() => ref.current?.click()} className="bg-[#155e46] hover:bg-[#0d3b2e]" data-testid="kop-upload-btn"><Upload className="mr-2 h-4 w-4" /> Upload JPG/PNG</Button>
             {org.settings.kop_surat && <Button variant="outline" onClick={delKop} data-testid="kop-delete-btn"><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>}
           </div>
+        </Card>
+
+        <Card title="Keamanan Akun Petugas">
+          <label className="flex items-center gap-3 text-sm font-semibold">
+            <Switch checked={!!s.auto_nonaktif} onCheckedChange={(v) => set("auto_nonaktif")(v ? 1 : 0)} data-testid="auto-nonaktif-switch" />
+            Nonaktifkan otomatis akun petugas yang tidak login
+          </label>
+          <div className="mt-4 max-w-xs">
+            <Field label="Batas tidak login (hari)"><Input type="number" min={7} value={s.auto_nonaktif_hari} onChange={set("auto_nonaktif_hari")} disabled={!s.auto_nonaktif} data-testid="auto-nonaktif-hari" /></Field>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">Berlaku untuk Petugas CU saja (Admin Pusat tidak terpengaruh). Dihitung dari login terakhir, atau tanggal akun dibuat/diaktifkan kembali bila belum pernah login. Akun yang dinonaktifkan bisa diaktifkan lagi di Data Induk &rarr; Data User. Klik Simpan Pengaturan setelah mengubah.</p>
         </Card>
 
         <Card title="Notifikasi Email Defisit">
