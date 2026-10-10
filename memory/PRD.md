@@ -30,6 +30,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Notifikasi email defisit (Emergent-managed Resend, `email_service.py`): check_defisit() berjalan di background setelah pencairan/batal/iuran; email hanya saat CU BARU masuk defisit (state di `defisit_state`), ke semua admin aktif; riwayat di `notif_log` (GET /api/notifikasi, kartu di Pengaturan)
 - Lupa password: link di Login -> /lupa-password (POST /api/auth/forgot-password, respons generik, maks 3/jam), email tautan `FRONTEND_URL/reset-password?token=` (token sha256, 1 jam, sekali pakai) -> POST /api/auth/reset-password. Seed admin tidak lagi menimpa password yang sudah diubah.
 - Tombol "Kirim email uji" (POST /api/notifikasi/uji, 1x/menit) ke semua admin aktif
+- Ubah Password sendiri di header (POST /api/auth/change-password: password lama + baru)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

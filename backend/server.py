@@ -141,6 +141,25 @@ async def me(user=Depends(current_user)):
     return user
 
 
+class ChangePwIn(BaseModel):
+    password_lama: str
+    password_baru: str
+
+
+@api.post("/auth/change-password")
+async def change_password(body: ChangePwIn, user=Depends(current_user)):
+    doc = await db.users.find_one({"id": user["id"]})
+    if not verify_pw(body.password_lama, doc["password_hash"]):
+        raise HTTPException(400, "Password lama salah")
+    if len(body.password_baru) < 6:
+        raise HTTPException(400, "Password baru minimal 6 karakter")
+    if body.password_baru == body.password_lama:
+        raise HTTPException(400, "Password baru harus berbeda dari password lama")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(body.password_baru)}})
+    await db.password_reset_tokens.update_many({"user_id": user["id"]}, {"$set": {"used": True}})
+    return {"message": "Password berhasil diubah"}
+
+
 class ForgotIn(BaseModel):
     email: str
 

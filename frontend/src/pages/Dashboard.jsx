@@ -50,7 +50,7 @@ const Tren = ({ initial }) => {
       <LineChart data={data} margin={{ left: 10, right: 10 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e3dc" />
         <XAxis dataKey="bulan" tickFormatter={bln} tick={{ fontSize: 11 }} />
-        <YAxis tickFormatter={(v) => `${v / 1e6} jt`} tick={{ fontSize: 11 }} width={60} />
+        <YAxis domain={[0, (m) => Math.max(m, 1000000)]} tickFormatter={(v) => `${v / 1e6} jt`} tick={{ fontSize: 11 }} width={60} />
         <Tooltip labelFormatter={bln} formatter={(v, n) => [`Rp ${rp(v)}`, n]} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Line type="monotone" dataKey="iuran" name="Iuran Tudung" stroke="#d97706" strokeWidth={2.5} dot={{ r: 3 }} />

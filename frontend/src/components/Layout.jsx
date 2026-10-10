@@ -4,6 +4,7 @@ import { LayoutDashboard, FileStack, FilePlus2, ScanSearch, HandCoins, ReceiptTe
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { UbahPassword } from "@/components/UbahPassword";
 
 const NAV = [
   { group: "Dashboard", items: [{ to: "/", label: "Dashboard", icon: LayoutDashboard, end: true }] },
@@ -107,6 +108,7 @@ export default function Layout() {
             {isAdmin ? "Admin Pusat" : `Petugas • ${cuName || "-"}`}
           </span>
           <span className="hidden text-sm font-medium md:block" data-testid="user-name">{user?.name}</span>
+          <UbahPassword />
           <Button variant="outline" size="sm" onClick={() => { logout(); nav("/login"); }} data-testid="logout-btn">
             <LogOut className="mr-1.5 h-4 w-4" /> Keluar
           </Button>
