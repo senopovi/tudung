@@ -54,15 +54,19 @@ export const ReportShell = ({ title, lines = [], fileName = "laporan", filters, 
       </div>
       <div className="overflow-x-auto">
         <div className="paper print-area" data-testid="report-paper">
-          <Kop settings={org.settings} p={org.puskopdit} />
-          <div className="mb-3 text-center">
-            <p className="text-[12pt] font-bold uppercase">{title}</p>
-            {lines.filter(Boolean).map((l) => (
-              <p key={l} className="text-[10pt] font-semibold">{l}</p>
-            ))}
-          </div>
-          {children}
-          <Signatures p={org.puskopdit} />
+          <table className="print-wrap" data-testid="report-print-wrap">
+            <thead><tr><td><Kop settings={org.settings} p={org.puskopdit} /></td></tr></thead>
+            <tbody><tr><td>
+              <div className="mb-3 text-center">
+                <p className="text-[12pt] font-bold uppercase">{title}</p>
+                {lines.filter(Boolean).map((l) => (
+                  <p key={l} className="text-[10pt] font-semibold">{l}</p>
+                ))}
+              </div>
+              {children}
+              <Signatures p={org.puskopdit} />
+            </td></tr></tbody>
+          </table>
         </div>
       </div>
     </div>

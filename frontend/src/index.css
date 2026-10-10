@@ -61,12 +61,22 @@ body {
 .rpt-table tfoot td { font-weight: 700; background: #f7f5ee; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .rpt-table tr.rpt-defisit td { color: #b91c1c; background: #fef2f2; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-@page { size: A4 portrait; margin: 10mm; }
+.print-wrap { width: 100%; border-collapse: collapse; }
+.print-wrap > thead > tr > td, .print-wrap > tbody > tr > td { padding: 0; border: 0; vertical-align: top; }
+.print-wrap > thead { display: table-header-group; }
+
+@page {
+    size: A4 portrait;
+    margin: 10mm 10mm 14mm 10mm;
+    @bottom-center { content: "Halaman " counter(page) " dari " counter(pages); font-size: 8pt; color: #333; }
+}
 @media print {
+    html, body { background: #fff !important; }
     body * { visibility: hidden !important; }
     .print-area, .print-area * { visibility: visible !important; }
     .print-area { position: absolute; left: 0; top: 0; width: 100%; max-width: none; padding: 0; box-shadow: none; }
     .no-print { display: none !important; }
     .rpt-table { font-size: 7.5pt; }
     .rpt-table tr { page-break-inside: avoid; }
+    .rpt-table tfoot { display: table-row-group; }
 }

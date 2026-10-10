@@ -39,6 +39,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Angka kematian/CTT per mil: credit_unions.jumlah_anggota (terkini) + anggota_per_tahun {"2025": n}; per mil memakai jumlah tahun tsb, fallback ke terkini (ditandai *); CU tanpa jumlah anggota tidak dihitung; laporan /laporan/permil (GET /api/laporan/permil?tahun=) + kartu Dashboard
 - (2026-10-10) Impor Jumlah Anggota dari Excel (Data Induk > Data Credit Union, admin): template .xlsx (Kode CU, Tahun, Jumlah Anggota; format panjang), parse di browser (xlsx), pratinjau baris valid/error, simpan via POST /api/cu/anggota-import {rows:[{kode,tahun,jumlah}]} — kode case-insensitive, menimpa tahun yang sudah ada, ditolak seluruhnya bila ada error
 - (2026-10-10) Kop surat resmi PUSAKA (dari user, garis tepi 1px dipangkas) diunggah ke settings.kop_surat -> dipakai semua laporan cetak A4 via ReportShell
+- (2026-10-10) Cetak multi-halaman: ReportShell membungkus konten dalam table.print-wrap (thead = kop, diulang tiap halaman; judul hanya halaman 1; tanda tangan setelah tabel di halaman terakhir); header kolom tabel ikut diulang, tfoot JUMLAH hanya di akhir; @page @bottom-center "Halaman X dari Y" (Chrome/Edge 131+); latar body putih saat cetak
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi
