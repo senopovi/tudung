@@ -1,0 +1,273 @@
+import { useEffect, useMemo, useState } from "react";
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/Common";
+import { CuSelect, SimpleSelect, RG } from "@/components/Controls";
+import { ReportShell, ReportTable } from "@/components/Report";
+import { useAuth } from "@/context/AuthContext";
+import { api, BULAN, rp, tglS } from "@/lib/api";
+
+const thisYear = new Date().getFullYear();
+const pad = (n) => String(n).padStart(2, "0");
+const lastDay = (y, m) => new Date(y, m, 0).getDate();
+
+const periods = (tipe, y) => {
+  const len = { bulan: 1, triwulan: 3, semester: 6, tahun: 12 }[tipe];
+  const names = { bulan: (i) => BULAN[i], triwulan: (i) => `Triwulan ${i + 1}`, semester: (i) => `Semester ${i + 1}`, tahun: () => `Tahun ${y}` }[tipe];
+  return Array.from({ length: 12 / len }, (_, i) => {
+    const s = i * len + 1, e = s + len - 1;
+    return { id: i, label: names(i), dari: `${y}-${pad(s)}-01`, sampai: `${y}-${pad(e)}-${lastDay(y, e)}` };
+  });
+};
+
+const ageYears = (a, b) => {
+  if (!a || !b) return null;
+  const [y1, m1, d1] = a.split("-").map(Number);
+  const [y2, m2, d2] = b.split("-").map(Number);
+  let y = y2 - y1;
+  if (m2 < m1 || (m2 === m1 && d2 < d1)) y -= 1;
+  const exact = m2 === m1 && d2 === d1;
+  return y + (exact ? 0 : 0.5);
+};
+
+const useData = (url, params) => {
+  const [rows, setRows] = useState([]);
+  const key = JSON.stringify(params);
+  useEffect(() => {
+    const p = Object.fromEntries(Object.entries(params).filter(([, v]) => v));
+    api.get(url, { params: p }).then((r) => setRows(r.data));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, key]);
+  return rows;
+};
+
+const cuLine = (cus, id) => (id ? `Credit Union: ${cus.find((c) => c.id === id)?.nama || "-"}` : "Semua Credit Union");
+const TIPE = [["triwulan", "Tiga Bulan"], ["semester", "Enam Bulan"], ["tahun", "Satu Tahun"]];
+const TIPE_LABEL = { bulan: "Bulanan", triwulan: "Tiga Bulanan", semester: "Enam Bulanan", tahun: "Tahunan" };
+
+const PeriodFilters = ({ f, set, isAdmin }) => (
+  <div className="grid gap-3 md:grid-cols-3">
+    {isAdmin && <Field label="Credit Union"><CuSelect value={f.cu_id} onChange={set("cu_id")} allowAll testid="an-filter-cu" /></Field>}
+    <Field label="Periode"><SimpleSelect value={f.tipe === "bulan" ? "" : f.tipe} onChange={(v) => set("tipe")(v || "bulan")} placeholder="Per Bulan" options={TIPE} testid="an-filter-tipe" /></Field>
+    <Field label="Tahun"><Input type="number" value={f.tahun} onChange={(e) => set("tahun")(Number(e.target.value))} data-testid="an-filter-tahun" /></Field>
+  </div>
+);
+
+const useF = (init) => {
+  const [f, setF] = useState(init);
+  return [f, (k) => (v) => setF((o) => ({ ...o, [k]: v?.target ? v.target.value : v }))];
+};
+
+const usePeriodRows = (f) => {
+  const cair = useData("/permohonan", { status: "Dicairkan", cu_id: f.cu_id, cair_dari: `${f.tahun}-01-01`, cair_sampai: `${f.tahun}-12-31` });
+  return useMemo(() => periods(f.tipe, f.tahun).map((p) => {
+    const rs = cair.filter((r) => r.tanggal_cair >= p.dari && r.tanggal_cair <= p.sampai);
+    const g = (k) => rs.reduce((a, r) => a + (r.analisis?.[k] || 0), 0);
+    return { ...p, n: rs.length, l: rs.filter((r) => r.jenis_kelamin === "L").length, p: rs.filter((r) => r.jenis_kelamin === "P").length, sanduk: g("sanduk_disetujui"), lalau: g("lalau_disetujui"), total: g("total_disetujui") };
+  }), [cair, f.tipe, f.tahun]);
+};
+
+export function LapSaldoPeriode() {
+  const { org, isAdmin } = useAuth();
+  const [f, set] = useF({ cu_id: "", tipe: "bulan", tahun: thisYear });
+  const rows = usePeriodRows(f);
+  const cols = [
+    { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
+    { key: "label", label: "Periode" },
+    { key: "sanduk", label: "SANDUK", money: true, total: true },
+    { key: "lalau", label: "LALAU", money: true, total: true },
+    { key: "total", label: "JUMLAH", money: true, total: true },
+  ];
+  return (
+    <ReportShell title="Laporan Saldo Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Saldo_Pencairan_${f.tipe}_${f.tahun}`}
+      filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
+      <ReportTable columns={cols} rows={rows} labelSpan={2} />
+    </ReportShell>
+  );
+}
+
+export function LapGenderPeriode() {
+  const { org, isAdmin } = useAuth();
+  const [f, set] = useF({ cu_id: "", tipe: "bulan", tahun: thisYear });
+  const rows = usePeriodRows(f);
+  const cols = [
+    { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
+    { key: "label", label: "Periode" },
+    { key: "l", label: "Laki-laki (L)", center: true, total: true },
+    { key: "p", label: "Perempuan (P)", center: true, total: true },
+    { key: "n", label: "JUMLAH", center: true, total: true },
+  ];
+  return (
+    <ReportShell title="Laporan Jumlah Penerima Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Penerima_Pencairan_${f.tipe}_${f.tahun}`}
+      filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
+      <ReportTable columns={cols} rows={rows} labelSpan={2} />
+    </ReportShell>
+  );
+}
+
+export function LapTidakDisetujui() {
+  const { org, isAdmin } = useAuth();
+  const [f, set] = useF({ cu_id: "", terima_dari: "", terima_sampai: "", hasil: "Tidak Disetujui" });
+  const rows = useData("/permohonan", { ...f, status: "Sudah Dianalisis" });
+  const alasan = (r) => {
+    const a = r.analisis || {};
+    const list = [...(a.catatan_umum || []), ...(a.catatan_sanduk || []), ...(a.catatan_lalau || [])].filter((t) => !t.includes("sesuai Saldo Permohonan"));
+    return list.join(" ") + (a.catatan ? ` Catatan: ${a.catatan}` : "");
+  };
+  const cols = [
+    { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
+    { key: "nama", label: "Nama" },
+    { key: "nomor_anggota", label: "BA", center: true },
+    { key: "cu_nama", label: "CU" },
+    { key: "tanggal_terima", label: "Tgl Terima", center: true, render: (r) => tglS(r.tanggal_terima) },
+    { key: "total", label: "Diajukan", money: true, total: true },
+    { key: "hasil", label: "Hasil", render: (r) => r.analisis?.hasil },
+    { key: "alasan", label: "Alasan (Hasil Analisis)", render: alasan },
+  ];
+  return (
+    <ReportShell title={`Laporan Data Permohonan ${f.hasil}`} lines={[cuLine(org.cus, f.cu_id)]} fileName="Permohonan_Tidak_Disetujui"
+      filters={
+        <div className="grid gap-3 md:grid-cols-4">
+          {isAdmin && <Field label="Credit Union"><CuSelect value={f.cu_id} onChange={set("cu_id")} allowAll testid="an-filter-cu" /></Field>}
+          <Field label="Hasil"><SimpleSelect value={f.hasil === "Tidak Disetujui" ? "" : f.hasil} onChange={(v) => set("hasil")(v || "Tidak Disetujui")} placeholder="Tidak Disetujui" options={[["Ditunda", "Ditunda"]]} testid="an-filter-hasil" /></Field>
+          <Field label="Tgl Terima Dari"><Input type="date" value={f.terima_dari} onChange={set("terima_dari")} data-testid="an-filter-dari" /></Field>
+          <Field label="Tgl Terima Sampai"><Input type="date" value={f.terima_sampai} onChange={set("terima_sampai")} data-testid="an-filter-sampai" /></Field>
+        </div>
+      }>
+      <ReportTable columns={cols} rows={rows} labelSpan={5} />
+    </ReportShell>
+  );
+}
+
+export function LapTren() {
+  const { org, isAdmin } = useAuth();
+  const [f, set] = useF({ cu_id: "", tahun: thisYear });
+  const range = { dari: `${f.tahun}-01-01`, sampai: `${f.tahun}-12-31` };
+  const iuran = useData("/iuran", { cu_id: f.cu_id, ...range });
+  const cair = useData("/permohonan", { status: "Dicairkan", cu_id: f.cu_id, cair_dari: range.dari, cair_sampai: range.sampai });
+  const rows = useMemo(() => BULAN.map((b, i) => {
+    const m = `${f.tahun}-${pad(i + 1)}`;
+    const iu = iuran.filter((r) => r.tanggal.startsWith(m));
+    const cr = cair.filter((r) => r.tanggal_cair?.startsWith(m));
+    const s = (arr, fn) => arr.reduce((a, r) => a + (fn(r) || 0), 0);
+    return { id: m, label: b, iuran: s(iu, (r) => r.total), biris: s(iu, (r) => r.biris), gppk: s(iu, (r) => r.gppk), n: cr.length, cair: s(cr, (r) => r.analisis?.total_disetujui) };
+  }), [iuran, cair, f.tahun]);
+  const cols = [
+    { key: "label", label: "Bulan" },
+    { key: "iuran", label: "Iuran Tudung", money: true, total: true },
+    { key: "biris", label: "Biris Pangkaras", money: true, total: true },
+    { key: "gppk", label: "Sol. GPPK", money: true, total: true },
+    { key: "n", label: "Jml Anggota Cair", center: true, total: true },
+    { key: "cair", label: "Saldo Pencairan", money: true, total: true },
+  ];
+  return (
+    <ReportShell title="Tren Iuran dan Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `Tahun ${f.tahun}`]} fileName={`Tren_Iuran_Pencairan_${f.tahun}`}
+      filters={
+        <div className="grid gap-3 md:grid-cols-3">
+          {isAdmin && <Field label="Credit Union"><CuSelect value={f.cu_id} onChange={set("cu_id")} allowAll testid="an-filter-cu" /></Field>}
+          <Field label="Tahun"><Input type="number" value={f.tahun} onChange={(e) => set("tahun")(Number(e.target.value))} data-testid="an-filter-tahun" /></Field>
+        </div>
+      }>
+      <div className="mb-4 h-[230px] w-full" data-testid="tren-chart">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={rows} margin={{ left: 10, right: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e3dc" />
+            <XAxis dataKey="label" tick={{ fontSize: 9 }} tickFormatter={(v) => v.slice(0, 3)} />
+            <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `${v / 1e6} jt`} width={50} />
+            <Tooltip formatter={(v) => `Rp ${rp(v)}`} />
+            <Legend wrapperStyle={{ fontSize: 10 }} />
+            <Line type="monotone" dataKey="iuran" name="Iuran Tudung" stroke="#d97706" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="cair" name="Saldo Pencairan" stroke="#155e46" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <ReportTable columns={cols} rows={rows} labelSpan={1} />
+    </ReportShell>
+  );
+}
+
+const GROUPS = {
+  meninggal: [[0, 40, "s/d 40 tahun"], [40, 50, "> 40 - 50 tahun"], [50, 55, "> 50 - 55 tahun"], [55, 60, "> 55 - 60 tahun"], [60, 65, "> 60 - 65 tahun"], [65, 70, "> 65 - 70 tahun"], [70, 999, "> 70 tahun"]],
+  masuk: [[0, 17, "s/d 17 tahun"], [17, 30, "> 17 - 30 tahun"], [30, 45, "> 30 - 45 tahun"], [45, 55, "> 45 - 55 tahun"], [55, 60, "> 55 - 60 tahun"], [60, 65, "> 60 - 65 tahun"], [65, 70, "> 65 - 70 tahun"], [70, 999, "> 70 tahun"]],
+};
+
+export function LapUsia() {
+  const { org, isAdmin } = useAuth();
+  const [f, set] = useF({ cu_id: "", dasar: "meninggal", tahun: "", jenis: "" });
+  const all = useData("/permohonan", { cu_id: f.cu_id });
+  const rows = useMemo(() => {
+    const src = all.filter((r) => (!f.tahun || r.tgl_kejadian?.startsWith(String(f.tahun))) && (!f.jenis || r.jenis_kejadian === f.jenis));
+    return GROUPS[f.dasar].map(([lo, hi, label]) => {
+      const rs = src.filter((r) => {
+        const a = ageYears(r.tgl_lahir, f.dasar === "meninggal" ? r.tgl_kejadian : r.tgl_anggota);
+        return a !== null && (lo === 0 ? a <= hi : a > lo && a <= hi);
+      });
+      return { id: label, label, l: rs.filter((r) => r.jenis_kelamin === "L").length, p: rs.filter((r) => r.jenis_kelamin === "P").length, n: rs.length,
+        sanduk: rs.reduce((a, r) => a + (r.sanduk || 0), 0), lalau: rs.reduce((a, r) => a + (r.lalau || 0), 0) };
+    });
+  }, [all, f.dasar, f.tahun, f.jenis]);
+  const cols = [
+    { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
+    { key: "label", label: f.dasar === "meninggal" ? "Usia Meninggal/CTT" : "Usia Masuk Anggota" },
+    { key: "l", label: "L", center: true, total: true },
+    { key: "p", label: "P", center: true, total: true },
+    { key: "n", label: "Jumlah Anggota", center: true, total: true },
+    { key: "sanduk", label: "Sanduk Diajukan", money: true, total: true },
+    { key: "lalau", label: "Lalau Diajukan", money: true, total: true },
+  ];
+  return (
+    <ReportShell title={`Laporan Data Anggota Meninggal/CTT berdasarkan ${f.dasar === "meninggal" ? "Usia Meninggal" : "Usia Masuk"}`}
+      lines={[cuLine(org.cus, f.cu_id), f.tahun ? `Tahun Kejadian ${f.tahun}` : "Seluruh Tahun"]} fileName={`Anggota_per_Usia_${f.dasar}`}
+      filters={
+        <div className="grid gap-3 md:grid-cols-4">
+          {isAdmin && <Field label="Credit Union"><CuSelect value={f.cu_id} onChange={set("cu_id")} allowAll testid="an-filter-cu" /></Field>}
+          <Field label="Berdasarkan"><RG value={f.dasar} onChange={set("dasar")} testid="an-filter-dasar" options={[["meninggal", "Usia Meninggal"], ["masuk", "Usia Masuk"]]} /></Field>
+          <Field label="Jenis Kejadian"><SimpleSelect value={f.jenis} onChange={set("jenis")} options={[["meninggal", "Meninggal Dunia"], ["cacat", "Cacat Total Tetap"]]} testid="an-filter-jenis" /></Field>
+          <Field label="Tahun Kejadian (kosong = semua)"><Input type="number" value={f.tahun} onChange={set("tahun")} data-testid="an-filter-tahun" /></Field>
+        </div>
+      }>
+      <ReportTable columns={cols} rows={rows} labelSpan={2} />
+    </ReportShell>
+  );
+}
+
+const SORTS = [["iuran", "Iuran Terbesar"], ["cair", "Saldo Pencairan Terbesar"], ["n_cair", "Jumlah Anggota Dicairkan"], ["n_meninggal", "Jumlah Anggota Meninggal/CTT"]];
+
+export function LapRating() {
+  const { org } = useAuth();
+  const [f, set] = useF({ tahun: thisYear, by: "cair" });
+  const range = f.tahun ? { dari: `${f.tahun}-01-01`, sampai: `${f.tahun}-12-31` } : {};
+  const iuran = useData("/iuran", range);
+  const all = useData("/permohonan", {});
+  const rows = useMemo(() => {
+    const inYear = (d) => !f.tahun || d?.startsWith(String(f.tahun));
+    return org.cus.map((c) => {
+      const ps = all.filter((r) => r.cu_id === c.id);
+      const cr = ps.filter((r) => r.status === "Dicairkan" && inYear(r.tanggal_cair));
+      return { id: c.id, kode: c.kode, nama: c.nama,
+        iuran: iuran.filter((r) => r.cu_id === c.id).reduce((a, r) => a + (r.total || 0), 0),
+        n_meninggal: ps.filter((r) => inYear(r.tgl_kejadian)).length,
+        n_cair: cr.length, cair: cr.reduce((a, r) => a + (r.analisis?.total_disetujui || 0), 0) };
+    }).sort((a, b) => b[f.by] - a[f.by] || b.cair - a.cair);
+  }, [org.cus, iuran, all, f.tahun, f.by]);
+  const cols = [
+    { key: "rank", label: "Peringkat", center: true, render: (_, i) => i + 1 },
+    { key: "kode", label: "Kode", center: true },
+    { key: "nama", label: "Credit Union" },
+    { key: "iuran", label: "Total Iuran Tudung", money: true, total: true },
+    { key: "n_meninggal", label: "Anggota Meninggal/CTT", center: true, total: true },
+    { key: "n_cair", label: "Anggota Dicairkan", center: true, total: true },
+    { key: "cair", label: "Saldo Pencairan", money: true, total: true },
+  ];
+  return (
+    <ReportShell title="Rating Credit Union" lines={[`Urutan: ${SORTS.find((s) => s[0] === f.by)[1]}`, f.tahun ? `Tahun ${f.tahun}` : "Seluruh Tahun"]} fileName={`Rating_CU_${f.by}_${f.tahun || "semua"}`}
+      filters={
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="Urutkan Berdasarkan"><SimpleSelect value={f.by === "cair" ? "" : f.by} onChange={(v) => set("by")(v || "cair")} placeholder="Saldo Pencairan Terbesar" options={SORTS.filter((s) => s[0] !== "cair")} testid="rating-sort" /></Field>
+          <Field label="Tahun (kosong = semua)"><Input type="number" value={f.tahun} onChange={(e) => set("tahun")(e.target.value ? Number(e.target.value) : "")} data-testid="rating-tahun" /></Field>
+        </div>
+      }>
+      <ReportTable columns={cols} rows={rows} labelSpan={3} />
+    </ReportShell>
+  );
+}
