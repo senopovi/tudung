@@ -22,29 +22,29 @@ const NAV = [
   {
     group: "Laporan",
     items: [
-      { to: "/laporan/permohonan", label: "Lap. Data Permohonan", icon: FileBarChart },
-      { to: "/laporan/analisis", label: "Lap. Data Analisis", icon: FileBarChart },
+      { to: "/laporan/permohonan", label: "Lap. Data Permohonan", icon: FileBarChart, perm: "lihat_laporan_permohonan" },
+      { to: "/laporan/analisis", label: "Lap. Data Analisis", icon: FileBarChart, perm: "lihat_hasil_analisis" },
       { to: "/laporan/pencairan", label: "Lap. Pencairan", icon: FileBarChart },
-      { to: "/laporan/rekap", label: "Rekap Pencairan per CU", icon: FileBarChart },
-      { to: "/laporan/cu", label: "Lap. Data Credit Union", icon: FileBarChart },
+      { to: "/laporan/rekap", label: "Rekap Pencairan per CU", icon: FileBarChart, admin: true },
+      { to: "/laporan/cu", label: "Lap. Data Credit Union", icon: FileBarChart, admin: true },
       { to: "/laporan/iuran", label: "Lap. Iuran Tudung", icon: FileBarChart },
       { to: "/laporan/saldo-periode", label: "Saldo Pencairan per Periode", icon: FileBarChart },
       { to: "/laporan/penerima-periode", label: "Penerima L/P per Periode", icon: FileBarChart },
-      { to: "/laporan/tidak-disetujui", label: "Permohonan Tidak Disetujui", icon: FileBarChart },
+      { to: "/laporan/tidak-disetujui", label: "Permohonan Tidak Disetujui", icon: FileBarChart, perm: "lihat_hasil_analisis" },
       { to: "/laporan/tren", label: "Tren Iuran & Pencairan", icon: FileBarChart },
-      { to: "/laporan/usia", label: "Anggota per Usia", icon: FileBarChart },
-      { to: "/laporan/rating", label: "Rating Credit Union", icon: FileBarChart },
-      { to: "/laporan/perbandingan", label: "Iuran vs Pencairan", icon: FileBarChart },
+      { to: "/laporan/usia", label: "Anggota per Usia", icon: FileBarChart, admin: true },
+      { to: "/laporan/rating", label: "Rating Credit Union", icon: FileBarChart, admin: true },
+      { to: "/laporan/perbandingan", label: "Iuran vs Pencairan", icon: FileBarChart, admin: true },
     ],
   },
   { group: "Data Induk", items: [{ to: "/data-induk", label: "Data Induk", icon: Database, admin: true }] },
   { group: "Pengaturan", items: [{ to: "/pengaturan", label: "Pengaturan Aplikasi", icon: Settings, admin: true }] },
 ];
 
-const NavList = ({ isAdmin, onNav }) => (
+const NavList = ({ isAdmin, can, onNav }) => (
   <nav className="space-y-5 px-3 py-4">
     {NAV.map((g) => {
-      const items = g.items.filter((i) => !i.admin || isAdmin);
+      const items = g.items.filter((i) => (!i.admin || isAdmin) && (!i.perm || can(i.perm)));
       if (!items.length) return null;
       return (
         <div key={g.group}>
@@ -80,8 +80,10 @@ const Brand = () => (
   </div>
 );
 
+export { NAV };
+
 export default function Layout() {
-  const { user, logout, isAdmin, org } = useAuth();
+  const { user, logout, isAdmin, org, can } = useAuth();
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
   const cuName = org.cus.find((c) => c.id === user?.cu_id)?.nama;
@@ -89,7 +91,7 @@ export default function Layout() {
   const Side = ({ onNav }) => (
     <div className="flex h-full flex-col bg-[#0d3b2e]">
       <Brand />
-      <div className="flex-1 overflow-y-auto"><NavList isAdmin={isAdmin} onNav={onNav} /></div>
+      <div className="flex-1 overflow-y-auto"><NavList isAdmin={isAdmin} can={can} onNav={onNav} /></div>
     </div>
   );
 

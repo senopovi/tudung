@@ -1,0 +1,9 @@
+crons:
+  - name: cek-akun-petugas
+    description: "Cek harian akun petugas: kirim pengingat 7 hari sebelum nonaktif & nonaktifkan otomatis"
+    cron: "0 8 * * *"
+    timezone: "Asia/Jakarta"
+    endpoint: "{{BASE_URL}}/api/cron/akun"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

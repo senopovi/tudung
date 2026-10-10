@@ -137,7 +137,7 @@ export default function Pengaturan() {
           <div className="mt-4 max-w-xs">
             <Field label="Batas tidak login (hari)"><Input type="number" min={7} value={s.auto_nonaktif_hari} onChange={set("auto_nonaktif_hari")} disabled={!s.auto_nonaktif} data-testid="auto-nonaktif-hari" /></Field>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">Berlaku untuk Petugas CU saja (Admin Pusat tidak terpengaruh). Dihitung dari login terakhir, atau tanggal akun dibuat/diaktifkan kembali bila belum pernah login. Akun yang dinonaktifkan bisa diaktifkan lagi di Data Induk &rarr; Data User. Klik Simpan Pengaturan setelah mengubah.</p>
+          <p className="mt-3 text-xs text-muted-foreground">Berlaku untuk Petugas CU saja (Admin Pusat tidak terpengaruh). Dihitung dari login terakhir, atau tanggal akun dibuat/diaktifkan kembali bila belum pernah login. Akun yang dinonaktifkan bisa diaktifkan lagi di Data Induk &rarr; Data User. Email pengingat dikirim ke petugas 7 hari sebelum dinonaktifkan (pengecekan harian pukul 08.00 WIB). Klik Simpan Pengaturan setelah mengubah.</p>
         </Card>
 
         <Card title="Notifikasi Email Defisit">

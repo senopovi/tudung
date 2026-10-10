@@ -32,7 +32,8 @@ const EntryRow = ({ e, i, onChange, onRemove, canRemove }) => {
 };
 
 export default function Iuran() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, can } = useAuth();
+  const bolehInput = can("input_iuran");
   const [cu, setCu] = useState(isAdmin ? "" : user.cu_id);
   const [tahun, setTahun] = useState(new Date().getFullYear());
   const [rows, setRows] = useState([]);
@@ -74,7 +75,7 @@ export default function Iuran() {
         <Field label="Tahun Buku"><Input type="number" value={tahun} onChange={(e) => setTahun(Number(e.target.value))} data-testid="iuran-tahun" /></Field>
       </div>
 
-      {cu && (
+      {bolehInput && cu && (
         <section className="space-y-4 rounded-lg border bg-white p-5 shadow-sm" data-testid="iuran-form">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#155e46]">{editId ? "Ubah Data Iuran" : "Input Pembayaran Iuran"}</h2>
           {entries.map((e, i) => (
@@ -115,7 +116,7 @@ export default function Iuran() {
                 <td className="px-3 py-2 text-right font-mono">{rp(r.gppk)}</td>
                 <td className="px-3 py-2">{r.keterangan2}</td>
                 <td className="px-3 py-2 text-right">
-                  {(
+                  {bolehInput && (
                     <div className="flex justify-end gap-1">
                       <Button size="icon" variant="ghost" onClick={() => { setEditId(r.id); setEntries([{ ...r }]); window.scrollTo({ top: 0, behavior: "smooth" }); }} data-testid={`iuran-edit-${r.id}`}><Pencil className="h-4 w-4 text-amber-700" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => setDel(r)} data-testid={`iuran-delete-${r.id}`}><Trash2 className="h-4 w-4 text-red-600" /></Button>

@@ -12,7 +12,8 @@ import { api, errMsg, rp, tglS, sortRows } from "@/lib/api";
 const STATUS = [["Antrian Analisis", "Antrian Analisis"], ["Sudah Dianalisis", "Sudah Dianalisis"], ["Dicairkan", "Dicairkan"]];
 
 export default function PermohonanList() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, can } = useAuth();
+  const editable = (r) => r.status !== "Dicairkan" && (isAdmin || (can("ubah_hapus_permohonan") && r.status === "Antrian Analisis"));
   const nav = useNavigate();
   const [rows, setRows] = useState([]);
   const [f, setF] = useState({ q: "", cu_id: "", status: "", terima_dari: "", terima_sampai: "", cair_dari: "", cair_sampai: "" });
@@ -98,7 +99,7 @@ export default function PermohonanList() {
                 <td className="px-3 py-2">
                   <div className="flex justify-end gap-1">
                     <Button size="icon" variant="ghost" onClick={() => nav(`/permohonan/${r.id}`)} title="Buka" data-testid={`open-${r.id}`}><Eye className="h-4 w-4" /></Button>
-                    {r.status !== "Dicairkan" && (
+                    {editable(r) && (
                       <>
                         <Button size="icon" variant="ghost" onClick={() => nav(`/permohonan/${r.id}/ubah`)} title="Ubah" data-testid={`edit-${r.id}`}><Pencil className="h-4 w-4 text-amber-700" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => setDel(r)} title="Hapus" data-testid={`delete-${r.id}`}><Trash2 className="h-4 w-4 text-red-600" /></Button>

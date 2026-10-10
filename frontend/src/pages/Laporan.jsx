@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { PageHeader, Field } from "@/components/Common";
 import { CuSelect, SimpleSelect } from "@/components/Controls";
@@ -7,6 +7,7 @@ import { ReportShell, ReportTable, PencairanTable } from "@/components/Report";
 import { useAuth } from "@/context/AuthContext";
 import { api, tglS, tgl, ymdText, BULAN, KEJADIAN } from "@/lib/api";
 import LaporanIuran from "@/pages/LaporanIuran";
+import { NAV } from "@/components/Layout";
 import { LapSaldoPeriode, LapGenderPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating, LapPerbandingan } from "@/pages/LaporanAnalitik";
 
 const useRows = (params, deps) => {
@@ -191,6 +192,9 @@ const MAP = {
 
 export default function Laporan() {
   const { jenis } = useParams();
+  const { isAdmin, can } = useAuth();
+  const item = NAV.flatMap((g) => g.items).find((i) => i.to === `/laporan/${jenis}`);
+  if (!MAP[jenis] || !item || (item.admin && !isAdmin) || (item.perm && !can(item.perm))) return <Navigate to="/" replace />;
   const [title, Comp] = MAP[jenis] || MAP.permohonan;
   return (
     <div>

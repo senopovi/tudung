@@ -248,12 +248,47 @@ async def auto_deactivate():
     if not s.get("auto_nonaktif"):
         return 0
     cutoff = (datetime.now(timezone.utc) - timedelta(days=int(s["auto_nonaktif_hari"]))).isoformat()
+    remind = (datetime.now(timezone.utc) - timedelta(days=max(int(s["auto_nonaktif_hari"]) - 7, 0))).isoformat()
     n = 0
-    for u in await db.users.find({"role": "petugas", "aktif": {"$ne": False}}, {"_id": 0, "id": 1, "last_login_at": 1, "created_at": 1, "reactivated_at": 1}).to_list(5000):
-        if max(u.get("last_login_at") or "", u.get("created_at") or "", u.get("reactivated_at") or "") < cutoff:
+    for u in await db.users.find({"role": "petugas", "aktif": {"$ne": False}}, {"_id": 0, "id": 1, "email": 1, "name": 1, "last_login_at": 1, "created_at": 1, "reactivated_at": 1, "reminder_for": 1}).to_list(5000):
+        base = max(u.get("last_login_at") or "", u.get("created_at") or "", u.get("reactivated_at") or "")
+        if base < cutoff:
             await db.users.update_one({"id": u["id"]}, {"$set": {"aktif": False, "nonaktif_otomatis": True, "nonaktif_at": now_iso()}})
             n += 1
+        elif base < remind and u.get("reminder_for") != base:
+            await db.users.update_one({"id": u["id"]}, {"$set": {"reminder_for": base}})
+            await _kirim_pengingat(u, base, int(s["auto_nonaktif_hari"]))
     return n
+
+
+async def _kirim_pengingat(u, base, hari):
+    batas = (datetime.fromisoformat(base) + timedelta(days=hari)).astimezone(ZoneInfo(os.environ["APP_TZ"]))
+    tgl = f"{batas.day} {BULAN_ID[batas.month - 1]} {batas.year}"
+    html = (
+        '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1c1917">'
+        f'<h2 style="color:#b45309;margin:0 0 12px">Akun {escape(EMAIL_FROM_NAME)} Akan Dinonaktifkan</h2>'
+        f'<p>Halo {escape(u.get("name", ""))}, akun petugas Anda belum digunakan untuk login dalam waktu lama.</p>'
+        f'<p>Demi keamanan, akun akan <b>dinonaktifkan otomatis pada {tgl}</b> jika tidak ada login sebelum tanggal tersebut.</p>'
+        '<p>Cukup login seperti biasa ke aplikasi untuk menjaga akun tetap aktif. Jika akun sudah nonaktif, hubungi Admin Pusat.</p>'
+        f'<p style="font-size:12px;color:#888">Email otomatis dari {escape(EMAIL_FROM_NAME)}. Kami tidak pernah meminta password Anda melalui email.</p>'
+        '</td></tr></table>')
+    ok, info = await send_email(to=[u["email"]], subject=f"[{EMAIL_FROM_NAME}] Pengingat: akun akan dinonaktifkan {tgl}", html=html)
+    await db.notif_log.insert_one({"id": new_id(), "jenis": "pengingat", "tahun": today().year, "cu": [f"Pengingat akun {u['email']}"],
+                                   "penerima": [u["email"]], "terkirim": ok, "info": info, "created_at": now_iso()})
+
+
+@api.post("/cron/akun")
+async def cron_akun(request: Request, background: BackgroundTasks):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer ") or not secrets.compare_digest(auth[7:], os.environ["WEBHOOK_CRON_SECRET"]):
+        raise HTTPException(401, "Unauthorized")
+    run_id = request.headers.get("X-Webhook-Id") or new_id()
+    if await db.cron_runs.find_one({"run_id": run_id}):
+        return {"ok": True, "duplicate": True}
+    await db.cron_runs.insert_one({"run_id": run_id, "at": now_iso()})
+    background.add_task(auto_deactivate)
+    return {"ok": True}
 
 
 def _user_doc(body: UserIn):
@@ -337,7 +372,29 @@ class CUIn(BaseModel):
     bagian_tudung: str = ""
     alamat: str = ""
     telepon: str = ""
+    hak_akses: dict = {}
 
+
+HAK_DEFAULT = {"input_iuran": True, "ubah_hapus_permohonan": True, "lihat_hasil_analisis": True, "lihat_laporan_permohonan": True}
+BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+
+
+def _cu_doc(body: CUIn):
+    d = body.model_dump()
+    d["hak_akses"] = {k: bool(body.hak_akses.get(k, v)) for k, v in HAK_DEFAULT.items()}
+    return d
+
+
+async def can(user, perm):
+    if user["role"] == "admin":
+        return True
+    cu = await db.credit_unions.find_one({"id": user.get("cu_id")}, {"hak_akses": 1}) or {}
+    return {**HAK_DEFAULT, **(cu.get("hak_akses") or {})}.get(perm, False)
+
+
+async def require_perm(user, perm):
+    if not await can(user, perm):
+        raise HTTPException(403, "Credit Union Anda tidak memiliki hak akses untuk tindakan ini")
 
 @api.get("/cu")
 async def list_cu(user=Depends(current_user)):
@@ -349,7 +406,7 @@ async def list_cu(user=Depends(current_user)):
 async def create_cu(body: CUIn, _=Depends(admin_user)):
     if await db.credit_unions.find_one({"kode": body.kode}):
         raise HTTPException(400, "Kode Credit Union sudah ada")
-    doc = {**body.model_dump(), "id": new_id(), "created_at": now_iso()}
+    doc = {**_cu_doc(body), "id": new_id(), "created_at": now_iso()}
     await db.credit_unions.insert_one(doc)
     return {"id": doc["id"]}
 
@@ -358,7 +415,7 @@ async def create_cu(body: CUIn, _=Depends(admin_user)):
 async def update_cu(cid: str, body: CUIn, _=Depends(admin_user)):
     if await db.credit_unions.find_one({"kode": body.kode, "id": {"$ne": cid}}):
         raise HTTPException(400, "Kode Credit Union sudah ada")
-    await db.credit_unions.update_one({"id": cid}, {"$set": body.model_dump()})
+    await db.credit_unions.update_one({"id": cid}, {"$set": _cu_doc(body)})
     return {"ok": True}
 
 
@@ -511,7 +568,8 @@ async def list_permohonan(request: Request, user=Depends(current_user)):
         q["cu_id"] = cu
     if f.get("status"):
         q["status"] = {"$in": f.get("status").split(",")}
-    if f.get("hasil"):
+    lihat_hasil = await can(user, "lihat_hasil_analisis")
+    if f.get("hasil") and lihat_hasil:
         q["analisis.hasil"] = f.get("hasil")
     if f.get("jk"):
         q["jenis_kelamin"] = f.get("jk")
@@ -528,7 +586,7 @@ async def list_permohonan(request: Request, user=Depends(current_user)):
             rng["$lte"] = f.get(b)
         if rng:
             q[field] = rng
-    rows = await db.permohonan.find(q, {"_id": 0}).sort("created_at", -1).to_list(10000)
+    rows = await db.permohonan.find(q, {"_id": 0, **({} if lihat_hasil else {"analisis": 0})}).sort("created_at", -1).to_list(10000)
     cus = await cu_map()
     for r in rows:
         r["cu_nama"] = cus.get(r["cu_id"], {}).get("nama", "-")
@@ -541,7 +599,16 @@ async def get_permohonan(pid: str, user=Depends(current_user)):
     p = await _get_p(pid, user)
     cu = await db.credit_unions.find_one({"id": p["cu_id"]}, {"_id": 0}) or {}
     p["cu_nama"] = cu.get("nama", "-")
+    if not await can(user, "lihat_hasil_analisis"):
+        p.pop("analisis", None)
     return p
+
+
+async def _petugas_edit(user, p):
+    if user["role"] != "admin":
+        await require_perm(user, "ubah_hapus_permohonan")
+        if p["status"] != S_ANTRIAN:
+            raise HTTPException(403, "Petugas hanya bisa mengubah/menghapus permohonan yang masih Antrian Analisis")
 
 
 @api.post("/permohonan")
@@ -555,6 +622,7 @@ async def create_permohonan(body: PermohonanIn, user=Depends(current_user)):
 @api.put("/permohonan/{pid}")
 async def update_permohonan(pid: str, body: PermohonanIn, user=Depends(current_user)):
     old = await _get_p(pid, user)
+    await _petugas_edit(user, old)
     if old["status"] == S_CAIR:
         raise HTTPException(400, "Data yang sudah dicairkan tidak bisa diubah")
     doc = await _p_doc(body, user, old)
@@ -566,6 +634,7 @@ async def update_permohonan(pid: str, body: PermohonanIn, user=Depends(current_u
 @api.delete("/permohonan/{pid}")
 async def delete_permohonan(pid: str, user=Depends(current_user)):
     p = await _get_p(pid, user)
+    await _petugas_edit(user, p)
     if p["status"] == S_CAIR:
         raise HTTPException(400, "Data yang sudah dicairkan tidak bisa dihapus")
     a = p.get("analisis") or {}
@@ -795,6 +864,7 @@ async def list_iuran(request: Request, user=Depends(current_user)):
 async def create_iuran(body: IuranBatch, background: BackgroundTasks, user=Depends(current_user)):
     if not body.items:
         raise HTTPException(400, "Tidak ada data iuran")
+    await require_perm(user, "input_iuran")
     for i in body.items:
         check_cu(user, i.cu_id)
     docs = [{**_iuran(i), "id": new_id(), "created_at": now_iso()} for i in body.items]
@@ -806,6 +876,7 @@ async def create_iuran(body: IuranBatch, background: BackgroundTasks, user=Depen
 @api.put("/iuran/{iid}")
 async def update_iuran(iid: str, body: IuranIn, background: BackgroundTasks, user=Depends(current_user)):
     background.add_task(check_defisit)
+    await require_perm(user, "input_iuran")
     await _own_iuran(iid, user)
     check_cu(user, body.cu_id)
     await db.iuran.update_one({"id": iid}, {"$set": _iuran(body)})
@@ -815,6 +886,7 @@ async def update_iuran(iid: str, body: IuranIn, background: BackgroundTasks, use
 @api.delete("/iuran/{iid}")
 async def delete_iuran(iid: str, background: BackgroundTasks, user=Depends(current_user)):
     background.add_task(check_defisit)
+    await require_perm(user, "input_iuran")
     await _own_iuran(iid, user)
     await db.iuran.delete_one({"id": iid})
     return {"ok": True}

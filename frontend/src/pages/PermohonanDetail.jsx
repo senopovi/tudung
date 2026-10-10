@@ -11,7 +11,7 @@ import { api, rp, tgl } from "@/lib/api";
 export default function PermohonanDetail() {
   const { id } = useParams();
   const nav = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, can } = useAuth();
   const [p, setP] = useState(null);
   useEffect(() => { api.get(`/permohonan/${id}`).then((r) => setP(r.data)); }, [id]);
   if (!p) return <p className="text-sm text-muted-foreground">Memuat...</p>;
@@ -21,7 +21,7 @@ export default function PermohonanDetail() {
     <div className="space-y-6">
       <PageHeader title={p.nama} subtitle={`BA ${p.nomor_anggota} • ${p.cu_nama}`}>
         <Button variant="outline" onClick={() => nav(-1)} data-testid="detail-back-btn"><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
-        {p.status !== "Dicairkan" && <Button variant="outline" onClick={() => nav(`/permohonan/${id}/ubah`)} data-testid="detail-edit-btn"><Pencil className="mr-2 h-4 w-4" /> Ubah</Button>}
+        {p.status !== "Dicairkan" && (isAdmin || (can("ubah_hapus_permohonan") && p.status === "Antrian Analisis")) && <Button variant="outline" onClick={() => nav(`/permohonan/${id}/ubah`)} data-testid="detail-edit-btn"><Pencil className="mr-2 h-4 w-4" /> Ubah</Button>}
         {isAdmin && p.status !== "Dicairkan" && (
           <Button className="bg-[#155e46] hover:bg-[#0d3b2e]" onClick={() => nav(`/analisis/${id}`)} data-testid="detail-analisis-btn"><ScanSearch className="mr-2 h-4 w-4" /> Analisis</Button>
         )}

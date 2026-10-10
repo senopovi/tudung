@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, Field } from "@/components/Common";
@@ -76,19 +77,32 @@ function CrudTab({ title, rows, columns, fields, onSave, onDelete, testid, rende
   );
 }
 
+const HAK = [["input_iuran", "Input & ubah iuran CU sendiri"], ["ubah_hapus_permohonan", "Ubah/hapus permohonan (selama Antrian Analisis)"], ["lihat_hasil_analisis", "Lihat hasil analisis & laporan analisis"], ["lihat_laporan_permohonan", "Lihat laporan data permohonan"]];
+const hakOf = (d) => ({ input_iuran: true, ubah_hapus_permohonan: true, lihat_hasil_analisis: true, lihat_laporan_permohonan: true, ...(d.hak_akses || {}) });
+
 function CUTab() {
   const { org, loadOrg } = useAuth();
+  const renderField = (k, e, set) => (k !== "hak_akses" ? null : (
+    <div className="space-y-2 rounded-md border bg-stone-50 p-3" data-testid="cu-hak-akses">
+      <p className="text-[11px] text-muted-foreground">Selalu diizinkan: input permohonan, laporan pencairan & iuran CU sendiri. Analisis & pencairan hanya Admin Pusat.</p>
+      {HAK.map(([h, l]) => (
+        <label key={h} className="flex items-center gap-2 text-sm">
+          <Checkbox checked={hakOf(e)[h]} onCheckedChange={(v) => set({ ...e, hak_akses: { ...hakOf(e), [h]: !!v } })} data-testid={`hak-${h}`} /> {l}
+        </label>
+      ))}
+    </div>
+  ));
   const onSave = async (d) => {
     if (!d.kode || !d.nama) { toast.error("Kode dan Nama wajib diisi"); return false; }
     try {
-      const body = Object.fromEntries(CU_FIELDS.map(([k]) => [k, d[k] || ""]));
+      const body = { ...Object.fromEntries(CU_FIELDS.map(([k]) => [k, d[k] || ""])), hak_akses: hakOf(d) };
       d.id ? await api.put(`/cu/${d.id}`, body) : await api.post("/cu", body);
       await loadOrg(); toast.success("Credit Union disimpan"); return true;
     } catch (e) { toast.error(errMsg(e)); return false; }
   };
   const onDelete = async (d) => { try { await api.delete(`/cu/${d.id}`); await loadOrg(); toast.success("Credit Union dihapus"); } catch (e) { toast.error(errMsg(e)); } };
-  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={CU_FIELDS} onSave={onSave} onDelete={onDelete}
-    columns={[["kode", "Kode"], ["nama", "Nama"], ["manager", "Manager"], ["bagian_tudung", "Bagian Tudung"], ["telepon", "Telepon"], ["alamat", "Alamat"]]} />;
+  return <CrudTab title="Credit Union" testid="cu" rows={org.cus} fields={[...CU_FIELDS, ["hak_akses", "Hak Akses Petugas CU"]]} onSave={onSave} onDelete={onDelete} renderField={renderField}
+    columns={[["kode", "Kode"], ["nama", "Nama"], ["manager", "Manager"], ["bagian_tudung", "Bagian Tudung"], ["telepon", "Telepon"], ["hak", "Hak Akses Petugas", (r) => `${Object.values(hakOf(r)).filter(Boolean).length}/${HAK.length} tambahan`]]} />;
 }
 
 const fmtWaktu = (s) => new Date(s).toLocaleString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
