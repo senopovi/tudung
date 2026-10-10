@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/Common";
 import { CuSelect, SimpleSelect, RG } from "@/components/Controls";
@@ -75,6 +75,26 @@ export function LapSaldoPeriode() {
   return (
     <ReportShell cuId={f.cu_id} title="Laporan Saldo Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Saldo_Pencairan_${f.tipe}_${f.tahun}`}
       filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
+      {sum("n") === 0 ? (
+        <div className="mb-4 flex h-[200px] w-full flex-col items-center justify-center rounded border border-dashed text-center" data-testid="saldo-periode-chart-empty">
+          <p className="text-[11pt] font-semibold text-stone-600">Belum ada data</p>
+          <p className="mt-1 text-[9pt] text-stone-500">Belum ada penerima pencairan pada tahun {f.tahun}.</p>
+        </div>
+      ) : (
+        <div className="mb-4 h-[220px] w-full" data-testid="saldo-periode-chart">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} margin={{ left: 0, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e3dc" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 9 }} tickFormatter={(v) => (f.tipe === "bulan" ? v.slice(0, 3) : v)} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 9 }} width={30} />
+              <Tooltip />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Bar dataKey="l" name="Laki-laki" fill="#155e46" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="p" name="Perempuan" fill="#d97706" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
       <table className="rpt-table" id="report-table" data-testid="report-table">
         <thead>
           <tr>
