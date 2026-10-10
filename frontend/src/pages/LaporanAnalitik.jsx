@@ -168,6 +168,12 @@ export function LapTren() {
           <Field label="Tahun"><Input type="number" value={f.tahun} onChange={(e) => set("tahun")(Number(e.target.value))} data-testid="an-filter-tahun" /></Field>
         </div>
       }>
+      {rows.every((r) => !r.iuran && !r.cair) ? (
+        <div className="mb-4 flex h-[230px] w-full flex-col items-center justify-center rounded border border-dashed text-center" data-testid="tren-chart-empty">
+          <p className="text-[11pt] font-semibold text-stone-600">Belum ada data</p>
+          <p className="mt-1 text-[9pt] text-stone-500">Belum ada iuran atau pencairan pada tahun {f.tahun}.</p>
+        </div>
+      ) : (
       <div className="mb-4 h-[230px] w-full" data-testid="tren-chart">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows} margin={{ left: 10, right: 10 }}>
@@ -181,6 +187,7 @@ export function LapTren() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      )}
       <ReportTable columns={cols} rows={rows} labelSpan={1} />
     </ReportShell>
   );
