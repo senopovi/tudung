@@ -25,7 +25,7 @@ function PuskopditTab() {
   };
   return (
     <div className="grid gap-4 rounded-lg border bg-white p-6 shadow-sm md:grid-cols-2" data-testid="puskopdit-form">
-      {[["nomor", "Nomor PUSKOPDIT (Badan Hukum)"], ["nama", "Nama PUSKOPDIT"], ["manager", "Nama Manager PUSKOPDIT"], ["bagian_tudung", "Nama Bagian Tudung PUSKOPDIT"], ["telepon", "Telepon"]].map(([k, l]) => (
+      {[["nomor", "Nomor PUSKOPDIT (Badan Hukum)"], ["nama", "Nama PUSKOPDIT"], ["manager", "Nama Manager PUSKOPDIT"], ["bagian_tudung", "Nama Bagian Tudung PUSKOPDIT"], ["telepon", "Telepon"], ["kota", "Kota Tanda Tangan (mis. Pontianak)"]].map(([k, l]) => (
         <Field key={k} label={l}><Input value={d[k] || ""} onChange={set(k)} data-testid={`puskopdit-${k}`} /></Field>
       ))}
       <Field label="Alamat PUSKOPDIT" className="md:col-span-2"><Textarea rows={2} value={d.alamat || ""} onChange={set("alamat")} data-testid="puskopdit-alamat" /></Field>

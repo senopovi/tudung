@@ -34,7 +34,7 @@ export const Signatures = ({ p, tanggal }) => (
       <p className="font-bold underline">{p.manager || "(.............................)"}</p>
     </div>
     <div className="text-center">
-      <p data-testid="report-signature-date">{tgl(tanggal || todayISO())}</p>
+      <p data-testid="report-signature-date">{p.kota?.trim() ? `${p.kota.trim()}, ` : ""}{tgl(tanggal || todayISO())}</p>
       <p>Bagian Tudung</p>
       <div className="h-20" />
       <p className="font-bold underline">{p.bagian_tudung || "(.............................)"}</p>

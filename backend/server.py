@@ -354,11 +354,12 @@ class PuskopditIn(BaseModel):
     manager: str = ""
     bagian_tudung: str = ""
     telepon: str = ""
+    kota: str = "Pontianak"
 
 
 @api.get("/puskopdit")
 async def get_puskopdit(_=Depends(current_user)):
-    return await db.puskopdit.find_one({"key": "profile"}, {"_id": 0}) or {}
+    return {"kota": "Pontianak", **(await db.puskopdit.find_one({"key": "profile"}, {"_id": 0}) or {})}
 
 
 @api.put("/puskopdit")
