@@ -312,6 +312,7 @@ async def kirim_pengingat_iuran():
     m, done = b["bulan"], await _sudah_diingatkan(b["bulan"])
     label = f"{BULAN_ID[int(m[5:7]) - 1]} {m[:4]}"
     hasil = {"terkirim": 0, "gagal": 0, "sudah": 0, "tanpa_petugas": 0}
+    sent, failed, nobody = [], [], []
     for c in b["items"]:
         if c["cu_id"] in done:
             hasil["sudah"] += 1
@@ -319,6 +320,7 @@ async def kirim_pengingat_iuran():
         to = [u["email"] for u in await db.users.find({"role": "petugas", "cu_id": c["cu_id"], "aktif": {"$ne": False}}, {"email": 1}).to_list(50)]
         if not to:
             hasil["tanpa_petugas"] += 1
+            nobody.append(c)
             continue
         html = (
             '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1c1917">'
@@ -329,9 +331,32 @@ async def kirim_pengingat_iuran():
             f'<p style="font-size:12px;color:#888">Email otomatis dari {escape(EMAIL_FROM_NAME)}.</p></td></tr></table>')
         ok, info = await send_email(to=to, subject=f"[{EMAIL_FROM_NAME}] Pengingat Iuran Tudung {label} - {c['kode']}", html=html)
         hasil["terkirim" if ok else "gagal"] += 1
+        (sent if ok else failed).append({**c, "to": to})
         await db.notif_log.insert_one({"id": new_id(), "jenis": "iuran", "bulan": m, "cu_id": c["cu_id"], "tahun": int(m[:4]),
                                        "cu": [f"Pengingat iuran {c['kode']} - {c['nama']}"], "penerima": to, "terkirim": ok, "info": info, "created_at": now_iso()})
+    if sent or failed:
+        await _ringkasan_iuran_admin(label, sent, failed, nobody)
     return hasil
+
+
+async def _ringkasan_iuran_admin(label, sent, failed, nobody):
+    admins = [u["email"] for u in await db.users.find({"role": "admin", "aktif": {"$ne": False}}, {"email": 1}).to_list(100)]
+    if not admins:
+        return
+    td = 'style="padding:6px 10px;border:1px solid #e5e3dc"'
+    def rows(items, status):
+        return "".join(f'<tr><td {td}>{escape(c["kode"])} - {escape(c["nama"])}</td><td {td}>{escape(", ".join(c.get("to", [])) or "-")}</td><td {td}>{status}</td></tr>' for c in items)
+    html = (
+        '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1c1917">'
+        f'<h2 style="color:#155e46;margin:0 0 12px">Ringkasan Pengingat Iuran {label}</h2>'
+        f'<p>Pengingat iuran baru saja dikirim ke <b>{len(sent)}</b> Credit Union yang belum mencatat iuran bulan {label}.</p>'
+        '<table style="border-collapse:collapse;font-size:14px"><tr style="background:#eef3ef">'
+        f'<th {td}>Credit Union</th><th {td}>Penerima</th><th {td}>Status</th></tr>'
+        f'{rows(sent, "Terkirim")}{rows(failed, "Gagal")}{rows(nobody, "Tidak ada petugas aktif")}</table>'
+        f'<p style="font-size:12px;color:#888">Email otomatis dari {escape(EMAIL_FROM_NAME)}.</p></td></tr></table>')
+    ok, info = await send_email(to=admins, subject=f"[{EMAIL_FROM_NAME}] Ringkasan Pengingat Iuran {label} ({len(sent)} CU)", html=html)
+    await db.notif_log.insert_one({"id": new_id(), "jenis": "ringkasan_iuran", "tahun": today().year, "cu": [f"Ringkasan pengingat iuran {label}: {len(sent)} CU"],
+                                   "penerima": admins, "terkirim": ok, "info": info, "created_at": now_iso()})
 
 
 @api.post("/notifikasi/iuran")

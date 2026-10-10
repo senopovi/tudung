@@ -71,36 +71,37 @@ export function LapSaldoPeriode() {
   const { org, isAdmin } = useAuth();
   const [f, set] = useF({ cu_id: "", tipe: "bulan", tahun: thisYear });
   const rows = usePeriodRows(f);
-  const cols = [
-    { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
-    { key: "label", label: "Periode" },
-    { key: "sanduk", label: "SANDUK", money: true, total: true },
-    { key: "lalau", label: "LALAU", money: true, total: true },
-    { key: "total", label: "JUMLAH", money: true, total: true },
-  ];
+  const sum = (k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
   return (
     <ReportShell cuId={f.cu_id} title="Laporan Saldo Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Saldo_Pencairan_${f.tipe}_${f.tahun}`}
       filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
-      <ReportTable columns={cols} rows={rows} labelSpan={2} />
-    </ReportShell>
-  );
-}
-
-export function LapGenderPeriode() {
-  const { org, isAdmin } = useAuth();
-  const [f, set] = useF({ cu_id: "", tipe: "bulan", tahun: thisYear });
-  const rows = usePeriodRows(f);
-  const cols = [
-    { key: "no", label: "No.", center: true, render: (_, i) => i + 1 },
-    { key: "label", label: "Periode" },
-    { key: "l", label: "Laki-laki (L)", center: true, total: true },
-    { key: "p", label: "Perempuan (P)", center: true, total: true },
-    { key: "n", label: "JUMLAH", center: true, total: true },
-  ];
-  return (
-    <ReportShell cuId={f.cu_id} title="Laporan Jumlah Penerima Pencairan Tudung" lines={[cuLine(org.cus, f.cu_id), `${TIPE_LABEL[f.tipe]} Tahun ${f.tahun}`]} fileName={`Penerima_Pencairan_${f.tipe}_${f.tahun}`}
-      filters={<PeriodFilters f={f} set={set} isAdmin={isAdmin} />}>
-      <ReportTable columns={cols} rows={rows} labelSpan={2} />
+      <table className="rpt-table" id="report-table" data-testid="report-table">
+        <thead>
+          <tr>
+            <th rowSpan={2}>No.</th><th rowSpan={2}>Periode</th>
+            <th colSpan={3}>PENCAIRAN TUDUNG</th>
+            <th colSpan={2}>JENIS KELAMIN</th>
+            <th rowSpan={2}>JUMLAH</th>
+          </tr>
+          <tr><th>SANDUK</th><th>LALAU</th><th>JUMLAH</th><th>Laki-laki</th><th>Perempuan</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.id}>
+              <td className="ctr">{i + 1}</td><td>{r.label}</td>
+              <td className="num">{rp(r.sanduk)}</td><td className="num">{rp(r.lalau)}</td><td className="num">{rp(r.total)}</td>
+              <td className="ctr">{r.l}</td><td className="ctr">{r.p}</td><td className="ctr">{r.n}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr data-testid="saldo-periode-total-row">
+            <td colSpan={2} className="ctr">JUMLAH</td>
+            <td className="num">{rp(sum("sanduk"))}</td><td className="num">{rp(sum("lalau"))}</td><td className="num">{rp(sum("total"))}</td>
+            <td className="ctr">{sum("l")}</td><td className="ctr">{sum("p")}</td><td className="ctr">{sum("n")}</td>
+          </tr>
+        </tfoot>
+      </table>
     </ReportShell>
   );
 }

@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api, tglS, tgl, ymdText, BULAN, KEJADIAN } from "@/lib/api";
 import LaporanIuran from "@/pages/LaporanIuran";
 import { NAV, allowed } from "@/components/Layout";
-import { LapSaldoPeriode, LapGenderPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating, LapPerbandingan, LapPerMil } from "@/pages/LaporanAnalitik";
+import { LapSaldoPeriode, LapTidakDisetujui, LapTren, LapUsia, LapRating, LapPerbandingan, LapPerMil } from "@/pages/LaporanAnalitik";
 
 const useRows = (params, deps) => {
   const [rows, setRows] = useState([]);
@@ -182,7 +182,6 @@ const MAP = {
   cu: ["Laporan Data Credit Union", LapCU],
   iuran: ["Laporan Iuran Tudung", LaporanIuran],
   "saldo-periode": ["Laporan Saldo Pencairan per Periode", LapSaldoPeriode],
-  "penerima-periode": ["Laporan Jumlah Penerima (L/P) per Periode", LapGenderPeriode],
   "tidak-disetujui": ["Laporan Permohonan Tidak Disetujui", LapTidakDisetujui],
   tren: ["Tren Iuran & Pencairan", LapTren],
   usia: ["Laporan Anggota berdasarkan Usia", LapUsia],
