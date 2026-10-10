@@ -52,6 +52,7 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - (2026-10-10) Grafik tren 12 bulan di Dashboard: kotak "Belum ada data" (dash-tren-empty) bila iuran & pencairan semua 0
 - (2026-10-10) Kartu per mil Dashboard: bila per mil kosong, Admin melihat tombol "Isi Jumlah Anggota" -> /data-induk?tab=cu (DataInduk membaca ?tab=puskopdit|cu|users); Petugas melihat teks "hubungi Admin Pusat untuk mengisi Jumlah Anggota"
 - (2026-10-10) Pengingat iuran di Dashboard Admin: /api/dashboard -> belum_iuran {bulan, items[{cu_id,kode,nama}], total_cu} (CU tanpa iuran bertanggal bulan berjalan, zona APP_TZ); kartu amber "Belum menyetor iuran <Bulan Tahun>" + link Input iuran; hijau bila semua sudah
+- (2026-10-10) Email pengingat iuran: settings iuran_reminder_mode (0 Nonaktif default, 1 Otomatis, 2 Manual) + iuran_reminder_tanggal (1-28, default 25, divalidasi backend). Cron harian 08.00 WIB (/api/cron/akun -> cron_harian) mengirim bila mode Otomatis & hari >= tanggal. POST /api/notifikasi/iuran (admin, manual). Penerima: petugas aktif CU yang belum mencatat iuran bulan berjalan; maks 1x per CU per bulan (notif_log jenis "iuran", bulan, cu_id, terkirim). Dashboard: tombol "Kirim Pengingat Iuran" saat mode Manual & hari >= tanggal; label "sudah diingatkan" per CU. Kartu di Pengaturan (PengingatIuran.jsx)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

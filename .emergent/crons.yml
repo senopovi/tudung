@@ -1,6 +1,6 @@
 crons:
   - name: cek-akun-petugas
-    description: "Cek harian akun petugas: kirim pengingat 7 hari sebelum nonaktif & nonaktifkan otomatis"
+    description: "Cek harian 08.00 WIB: pengingat & nonaktif otomatis akun petugas, serta email pengingat iuran (mode Otomatis)"
     cron: "0 8 * * *"
     timezone: "Asia/Jakarta"
     endpoint: "{{BASE_URL}}/api/cron/akun"

@@ -8,6 +8,7 @@ import { MoneyInput } from "@/components/MoneyInput";
 import { Switch } from "@/components/ui/switch";
 import { Confirm } from "@/components/Controls";
 import { TtdUpload } from "@/components/TtdUpload";
+import { PengingatIuran } from "@/components/PengingatIuran";
 import { useAuth } from "@/context/AuthContext";
 import { api, errMsg, todayISO } from "@/lib/api";
 
@@ -143,6 +144,10 @@ export default function Pengaturan() {
             <Field label="Batas tidak login (hari)"><Input type="number" min={7} value={s.auto_nonaktif_hari} onChange={set("auto_nonaktif_hari")} disabled={!s.auto_nonaktif} data-testid="auto-nonaktif-hari" /></Field>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">Berlaku untuk Petugas CU saja (Admin Pusat tidak terpengaruh). Dihitung dari login terakhir, atau tanggal akun dibuat/diaktifkan kembali bila belum pernah login. Akun yang dinonaktifkan bisa diaktifkan lagi di Data Induk &rarr; Data User. Email pengingat dikirim ke petugas 7 hari sebelum dinonaktifkan (pengecekan harian pukul 08.00 WIB). Klik Simpan Pengaturan setelah mengubah.</p>
+        </Card>
+
+        <Card title="Email Pengingat Iuran">
+          <PengingatIuran s={s} set={set} onSent={() => api.get("/notifikasi").then((r) => setNotif(r.data))} />
         </Card>
 
         <Card title="Notifikasi Email Defisit">

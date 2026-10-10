@@ -288,8 +288,55 @@ async def cron_akun(request: Request, background: BackgroundTasks):
     if await db.cron_runs.find_one({"run_id": run_id}):
         return {"ok": True, "duplicate": True}
     await db.cron_runs.insert_one({"run_id": run_id, "at": now_iso()})
-    background.add_task(auto_deactivate)
+    background.add_task(cron_harian)
     return {"ok": True}
+
+
+async def cron_harian():
+    await auto_deactivate()
+    try:
+        s = await get_settings()
+        if int(s["iuran_reminder_mode"]) == 1 and today().day >= int(s["iuran_reminder_tanggal"]):
+            await kirim_pengingat_iuran()
+    except Exception as e:
+        logger.error(f"pengingat iuran error: {e}")
+
+
+async def _sudah_diingatkan(m):
+    return set(await db.notif_log.distinct("cu_id", {"jenis": "iuran", "bulan": m, "terkirim": True}))
+
+
+async def kirim_pengingat_iuran():
+    cus = await cu_map()
+    b = await _belum_iuran(cus)
+    m, done = b["bulan"], await _sudah_diingatkan(b["bulan"])
+    label = f"{BULAN_ID[int(m[5:7]) - 1]} {m[:4]}"
+    hasil = {"terkirim": 0, "gagal": 0, "sudah": 0, "tanpa_petugas": 0}
+    for c in b["items"]:
+        if c["cu_id"] in done:
+            hasil["sudah"] += 1
+            continue
+        to = [u["email"] for u in await db.users.find({"role": "petugas", "cu_id": c["cu_id"], "aktif": {"$ne": False}}, {"email": 1}).to_list(50)]
+        if not to:
+            hasil["tanpa_petugas"] += 1
+            continue
+        html = (
+            '<table role="presentation" width="100%"><tr><td style="padding:24px;font-family:Arial,sans-serif;color:#1c1917">'
+            f'<h2 style="color:#b45309;margin:0 0 12px">Pengingat Iuran Tudung {label}</h2>'
+            f'<p>Yth. Petugas {escape(c["nama"])} ({escape(c["kode"])}),</p>'
+            f'<p>Hingga hari ini, iuran Tudung Credit Union Anda untuk bulan <b>{label}</b> belum tercatat di aplikasi.</p>'
+            '<p>Mohon segera melakukan penyetoran dan mencatatnya di menu <b>Iuran Credit Union</b>. Abaikan email ini bila iuran sudah disetor.</p>'
+            f'<p style="font-size:12px;color:#888">Email otomatis dari {escape(EMAIL_FROM_NAME)}.</p></td></tr></table>')
+        ok, info = await send_email(to=to, subject=f"[{EMAIL_FROM_NAME}] Pengingat Iuran Tudung {label} - {c['kode']}", html=html)
+        hasil["terkirim" if ok else "gagal"] += 1
+        await db.notif_log.insert_one({"id": new_id(), "jenis": "iuran", "bulan": m, "cu_id": c["cu_id"], "tahun": int(m[:4]),
+                                       "cu": [f"Pengingat iuran {c['kode']} - {c['nama']}"], "penerima": to, "terkirim": ok, "info": info, "created_at": now_iso()})
+    return hasil
+
+
+@api.post("/notifikasi/iuran")
+async def kirim_iuran_manual(_=Depends(admin_user)):
+    return await kirim_pengingat_iuran()
 
 
 def _user_doc(body: UserIn):
@@ -490,6 +537,10 @@ async def _write_settings(data):
     for k in data:
         if k != "sanduk_brackets":
             data[k] = int(data[k])
+    if "iuran_reminder_tanggal" in data and not 1 <= data["iuran_reminder_tanggal"] <= 28:
+        raise HTTPException(400, "Tanggal pengingat iuran harus 1-28")
+    if "iuran_reminder_mode" in data and data["iuran_reminder_mode"] not in (0, 1, 2):
+        raise HTTPException(400, "Mode pengingat iuran tidak valid")
     await db.settings.update_one({"key": "app"}, {"$set": data}, upsert=True)
     return {"ok": True}
 
@@ -1156,8 +1207,10 @@ async def _belum_iuran(cus):
     t = today()
     m = f"{t.year}-{t.month:02d}"
     sudah = set(await db.iuran.distinct("cu_id", {"tanggal": {"$gte": f"{m}-01", "$lte": f"{m}-31"}}))
-    items = sorted(({"cu_id": k, "kode": c.get("kode", "-"), "nama": c.get("nama", "-")} for k, c in cus.items() if k not in sudah), key=lambda x: x["kode"])
-    return {"bulan": m, "items": list(items), "total_cu": len(cus)}
+    done = await _sudah_diingatkan(m)
+    items = sorted(({"cu_id": k, "kode": c.get("kode", "-"), "nama": c.get("nama", "-"), "diingatkan": k in done} for k, c in cus.items() if k not in sudah), key=lambda x: x["kode"])
+    s = await get_settings()
+    return {"bulan": m, "items": list(items), "total_cu": len(cus), "mode": int(s["iuran_reminder_mode"]), "tanggal": int(s["iuran_reminder_tanggal"]), "hari_ini": t.day}
 
 
 async def _defisit(q, cus):

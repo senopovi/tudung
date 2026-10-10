@@ -18,6 +18,8 @@ DEFAULT_SETTINGS = {
     "nomor_berikutnya": 1,
     "auto_nonaktif": 0,
     "auto_nonaktif_hari": 90,
+    "iuran_reminder_mode": 0,
+    "iuran_reminder_tanggal": 25,
 }
 
 ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]

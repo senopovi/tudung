@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp, AlertTriangle, Users, CalendarClock } from "lucide-react";
+import { FileStack, ScanSearch, HandCoins, CheckCircle2, FilePlus2, TrendingUp, AlertTriangle, Users, CalendarClock, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/Common";
 import { CuSelect } from "@/components/Controls";
+import { kirimPengingatIuran } from "@/components/PengingatIuran";
 import { useAuth } from "@/context/AuthContext";
 import { api, rp, tgl, BULAN } from "@/lib/api";
 
@@ -29,7 +30,8 @@ const Defisit = ({ d }) =>
     </div>
   ) : null;
 
-const BelumIuran = ({ d }) => {
+const BelumIuran = ({ d, reload }) => {
+  const [busy, setBusy] = useState(false);
   if (!d || !d.total_cu) return null;
   const label = `${BULAN[Number(d.bulan.slice(5, 7)) - 1]} ${d.bulan.slice(0, 4)}`;
   if (!d.items.length) return (
@@ -37,15 +39,20 @@ const BelumIuran = ({ d }) => {
       <CheckCircle2 className="h-4 w-4" /> Semua Credit Union sudah menyetor iuran {label}.
     </div>
   );
+  const showBtn = d.mode === 2 && d.hari_ini >= d.tanggal && d.items.some((c) => !c.diingatkan);
+  const kirim = async () => { setBusy(true); if (await kirimPengingatIuran()) await reload(); setBusy(false); };
   return (
     <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-5" data-testid="dash-belum-iuran">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-sm font-bold text-amber-900"><CalendarClock className="h-4 w-4" /> Belum menyetor iuran {label} ({d.items.length} dari {d.total_cu} CU)</p>
-        <Link to="/iuran" className="text-xs font-semibold text-amber-800 hover:underline" data-testid="dash-belum-iuran-link">Input iuran</Link>
+        <div className="flex items-center gap-3">
+          {showBtn && <Button size="sm" onClick={kirim} disabled={busy} className="bg-amber-600 hover:bg-amber-700" data-testid="dash-kirim-pengingat-iuran-btn"><Send className="mr-2 h-3.5 w-3.5" /> {busy ? "Mengirim..." : "Kirim Pengingat Iuran"}</Button>}
+          <Link to="/iuran" className="text-xs font-semibold text-amber-800 hover:underline" data-testid="dash-belum-iuran-link">Input iuran</Link>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {d.items.map((c) => (
-          <span key={c.cu_id} className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-900" data-testid={`dash-belum-iuran-${c.cu_id}`}>{c.kode} — {c.nama}</span>
+          <span key={c.cu_id} className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-900" data-testid={`dash-belum-iuran-${c.cu_id}`}>{c.kode} — {c.nama}{c.diingatkan && <span className="ml-1.5 text-[10px] text-emerald-700">• sudah diingatkan</span>}</span>
         ))}
       </div>
     </div>
@@ -103,7 +110,8 @@ const Stat = ({ icon: Icon, label, value, accent, testid }) => (
 export default function Dashboard() {
   const { user, org, isAdmin } = useAuth();
   const [d, setD] = useState(null);
-  useEffect(() => { api.get("/dashboard").then((r) => setD(r.data)); }, []);
+  const load = () => api.get("/dashboard").then((r) => setD(r.data));
+  useEffect(() => { load(); }, []);
   if (!d) return <p className="text-sm text-muted-foreground">Memuat dashboard...</p>;
 
   return (
@@ -155,7 +163,7 @@ export default function Dashboard() {
       </div>
 
       <Defisit d={d.defisit} />
-      <BelumIuran d={d.belum_iuran} />
+      <BelumIuran d={d.belum_iuran} reload={load} />
 
       <div className="mt-6 flex flex-wrap items-center gap-6 rounded-lg border bg-white p-5 shadow-sm" data-testid="dash-permil">
         <div>
