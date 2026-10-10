@@ -33,6 +33,8 @@ User choices: Petugas CU hanya data CU sendiri; Admin Pusat semua. PDF disimpan 
 - Ubah Password sendiri di header (POST /api/auth/change-password: password lama + baru)
 - Riwayat login: users.last_login_at/login_count + koleksi login_history; kolom "Login Terakhir" (Aktif ≤7 hr, Jarang ≤30 hr, Tidak aktif) di Data User + dialog 20 login terakhir (GET /api/users/{id}/login-history)
 - Nonaktif otomatis petugas (settings auto_nonaktif 0/1, auto_nonaktif_hari=90, default OFF): dicek saat login, buka Data User, dan startup; baseline max(last_login_at, created_at, reactivated_at); login nonaktif -> 403 pesan jelas
+- Hak akses per CU (credit_unions.hak_akses: input_iuran, ubah_hapus_permohonan, lihat_hasil_analisis, lihat_laporan_permohonan; default semua ON) diatur admin di Data CU; enforced backend (can/require_perm) + menu/route frontend. Petugas selalu: input permohonan, lihat laporan pencairan/bantuan cair/saldo & penerima periode/tren/iuran CU sendiri. Admin only: analisis, pencairan, rekap/rating/perbandingan/usia/data CU, data induk, pengaturan
+- Pengingat email 7 hari sebelum nonaktif otomatis; cron harian 08:00 WIB `.emergent/crons.yml` -> POST /api/cron/akun (Bearer WEBHOOK_CRON_SECRET, idempotent)
 
 ## Backlog
 - P2: Riwayat audit perubahan, notifikasi

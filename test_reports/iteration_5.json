@@ -1,0 +1,29 @@
+{
+  "summary": "Full E2E for review-request #5: hak_akses per CU + email reminder 7 days before auto-deactivation. Backend: 11 pytest tests in /app/backend/tests/test_hak_akses_reminder.py — ALL PASSED (8.04s). Covered: (1) CU hak_akses persists via POST/PUT /api/cu with all 4 flags defaulting true; (2) petugas gets 403 on /api/users, POST /api/cu, PUT /api/settings, /api/analisis/*, POST+DELETE /api/pencairan, /api/permohonan/{id}/tunda; (3) input_iuran unchecked -> petugas POST /api/iuran=403; checked -> 200; (4) ubah_hapus_permohonan unchecked -> PUT+DELETE permohonan=403; checked but status Sudah Dianalisis (after admin analyzes) -> DELETE=403; (5) lihat_hasil_analisis=false -> GET /api/permohonan (list) and /api/permohonan/{id} strip the 'analisis' field for petugas (verified field absent on both endpoints and reappears when toggled back); (6) POST /api/cron/akun without Bearer -> 401, wrong secret -> 401, correct WEBHOOK_CRON_SECRET -> 200 {ok:true}, replay with same X-Webhook-Id -> {duplicate:true}; (7) with auto_nonaktif=1, auto_nonaktif_hari=90: petugas with last_login_at 85 days ago triggers reminder (users.reminder_for set, notif_log 'pengingat' entry present, email to delivered+<rand>@resend.dev), user stays active, second trigger does NOT create duplicate reminder (same baseline); (8) 95-days-ago triggers deactivation (aktif=false, nonaktif_otomatis=true). Frontend (Playwright): (a) Data Induk -> Data CU tab -> edit first CU opens dialog with data-testid 'cu-hak-akses' and 4 checkboxes data-testid hak-input_iuran / hak-ubah_hapus_permohonan / hak-lihat_hasil_analisis / hak-lihat_laporan_permohonan all defaulting data-state='checked'. (b) Admin sidebar lists all 22 nav items including nav-analisis, nav-pencairan, nav-data-induk, nav-pengaturan, nav-laporan-rekap/cu/usia/rating/perbandingan. (c) Petugas sidebar lists exactly 13 items — Dashboard, Permohonan, Permohonan Tambah, Bantuan Cair, Iuran, Lap. Permohonan/Analisis/Pencairan/Iuran/Saldo-Periode/Penerima-Periode/Tidak-Disetujui/Tren — hiding all admin-only entries. (d) Route guard: direct navigation as petugas to /laporan/rating, /laporan/perbandingan, /laporan/cu, /laporan/usia, /laporan/rekap all redirect to '/' (verified for 5 admin-only report paths). All TEST_ data cleaned up (users, CUs, notif_log entries deleted; settings auto_nonaktif reset to 0).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_hak_akses_reminder.py",
+    "/app/test_reports/pytest/hak_akses_reminder.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:388 can() correctly queries db.credit_unions each call — adequate for low-traffic multi-role gating; could be cached on request state if needed.",
+    "server.py:246 auto_deactivate() uses 'base = max(last_login_at, created_at, reactivated_at)'. Correct: reactivation resets the clock. reminder_for stores base so duplicate reminders are prevented until baseline changes (e.g. new login).",
+    "server.py:280 cron_akun uses secrets.compare_digest for the webhook secret (good) and idempotency via db.cron_runs by X-Webhook-Id — matches webhook best practices. Note: cron_runs collection has no TTL index, so entries accumulate forever; add TTL (e.g. 30 days) in startup indexes if long-term operation is expected.",
+    "server.py:589 list_permohonan uses projection {'analisis': 0} when !lihat_hasil to strip the field — simple and correct. Same for get_permohonan via dict pop.",
+    "server.py:867 /api/iuran POST requires 'input_iuran' before cu check; GET remains readable (no perm) — matches spec that petugas always sees own-CU iuran report.",
+    "server.py:607 _petugas_edit enforces status==Antrian Analisis for petugas edits; combined with hak_akses check — covers both guard conditions.",
+    "Layout.jsx NAV declares admin/perm flags per item; NavList filters by (!admin || isAdmin) && (!perm || can(perm)). Clean and matches route guard logic in Laporan.jsx.",
+    "AuthContext.can() merges default hak with CU-specific hak_akses — admin bypass is explicit. Correct.",
+    "Minor: delivered+<tag>@resend.dev addresses used for test petugas — Resend's sandbox 'delivered@resend.dev' accepts +tag addressing; emails are consumed by Resend's black-hole. No real inbox impacted."
+  ],
+  "updated_files": ["/app/backend/tests/test_hak_akses_reminder.py"],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% (all assertions)"},
+  "test_credentials": "admin: senopovi@gmail.com / TudungAdmin#2026; WEBHOOK_CRON_SECRET loaded from /app/backend/.env",
+  "seed_data_creation": "All test data created with TEST_ prefix (CU + petugas user + permohonan + iuran) in module-scoped fixture; teardown deletes permohonan, iuran, pencairan, users, notif_log entries, CU, cron_runs; settings reset auto_nonaktif=0 and nomor_berikutnya=1. Demo seed (CUG-001..006 x 54 permohonan created_by=seed-demo) untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Both review features (per-CU hak_akses & 7-day reminder cron) verified end-to-end. Pytest file /app/backend/tests/test_hak_akses_reminder.py is self-contained with cleanup — safe to reuse for regression. Reminder tests set last_login_at directly in Mongo (85/95 days ago) and rely on list_users calling auto_deactivate; cron endpoint tested separately for auth+idempotency. Minor suggestion: add a TTL index on db.cron_runs to avoid unbounded growth.",
+  "rca of the issue": "N/A"
+}
